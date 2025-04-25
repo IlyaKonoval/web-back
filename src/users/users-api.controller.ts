@@ -25,17 +25,23 @@ import {
   ApiQuery,
   ApiTags,
   ApiConflictResponse,
+  ApiBearerAuth,
 } from '@nestjs/swagger';
 import { UserResponseDto } from './dto/user-response.dto';
 import { PaginationDto } from './dto/pagination.dto';
 import { Response } from 'express';
+import { Public } from '../auth/decorators/public.decorator';
+import { Roles } from '../auth/decorators/roles.decorator';
+import { Role } from '@prisma/client';
 
 @ApiTags('Пользователи')
 @Controller('api/users')
+@ApiBearerAuth('JWT-auth')
 export class UsersApiController {
   constructor(private readonly usersService: UsersService) {}
 
   @Post()
+  @Roles(Role.ADMIN)
   @ApiOperation({ summary: 'Создать нового пользователя' })
   @ApiCreatedResponse({
     description: 'Пользователь успешно создан.',
@@ -54,6 +60,7 @@ export class UsersApiController {
   }
 
   @Get()
+  @Public()
   @ApiOperation({ summary: 'Получить всех пользователей с пагинацией' })
   @ApiOkResponse({
     description: 'Список пользователей.',
@@ -124,6 +131,7 @@ export class UsersApiController {
   }
 
   @Patch(':id')
+  @Roles(Role.ADMIN)
   @ApiOperation({ summary: 'Обновить пользователя по ID' })
   @ApiOkResponse({
     description: 'Пользователь успешно обновлен.',
@@ -146,6 +154,7 @@ export class UsersApiController {
   }
 
   @Delete(':id')
+  @Roles(Role.ADMIN)
   @ApiOperation({ summary: 'Удалить пользователя по ID' })
   @ApiOkResponse({ description: 'Пользователь успешно удален.' })
   @ApiNotFoundResponse({ description: 'Пользователь не найден.' })

@@ -10,21 +10,29 @@ import {
   NotFoundException,
   ConflictException,
   Delete,
+  Req,
+  UseGuards,
 } from '@nestjs/common';
 import { UsersService } from './users.service';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
-import { Response } from 'express';
+import { Response, Request } from 'express';
 import { ApiExcludeController } from '@nestjs/swagger';
+import { Roles } from '../auth/decorators/roles.decorator';
+import { Role } from '@prisma/client';
+import { AuthGuard } from '../auth/guards/auth.guard';
+import { RolesGuard } from '../auth/guards/roles.guard';
 
 @ApiExcludeController()
 @Controller('user-views')
+@UseGuards(AuthGuard, RolesGuard)
+@Roles(Role.ADMIN)
 export class UsersViewController {
   constructor(private readonly usersService: UsersService) {}
 
   @Get()
   @Render('users_view/index_user')
-  async showUsers() {
+  async showUsers(@Req() req: Request) {
     try {
       const users = await this.usersService.findAll();
       return {
@@ -32,6 +40,7 @@ export class UsersViewController {
         title: 'Список пользователей',
         bodyClass: 'bg-gray-100',
         mainClass: 'p-4',
+        currentUser: req.session ? req.session.getUserId() : null,
       };
     } catch (error) {
       console.error('Error fetching users_view for view:', error);
@@ -151,7 +160,7 @@ export class UsersViewController {
     }
   }
 
-  @Post('delete/:id') // Метод для обработки POST-запросов на удаление
+  @Post('delete/:id')
   async removeUserPost(
     @Param('id', ParseIntPipe) id: number,
     @Res() res: Response,
@@ -179,6 +188,26 @@ export class UsersViewController {
       console.error(`Error deleting user ${id} from view:`, error);
       res.redirect(
         `/user-views?error=${encodeURIComponent('Не удалось удалить пользователя.')}`,
+      );
+    }
+  }
+
+  @Post('promote/:id')
+  async promoteToAdmin(
+    @Param('id', ParseIntPipe) id: number,
+    @Res() res: Response,
+  ) {
+    try {
+      // Import AuthService and call promoteToAdmin
+      const { AuthService } = await import('../auth/auth.service');
+      const authService = res.app.get(AuthService);
+      await authService.promoteToAdmin(id);
+
+      res.redirect('/user-views');
+    } catch (error) {
+      console.error(`Error promoting user ${id} to admin:`, error);
+      res.redirect(
+        `/user-views?error=${encodeURIComponent('Не удалось сделать пользователя администратором.')}`,
       );
     }
   }
