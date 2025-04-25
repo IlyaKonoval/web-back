@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="keywords" content="HTML, CSS, Portfolio, ML">
+    <title>Список пользователей</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Roboto&display=swap" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/toastify-js/src/toastify.min.css">
+</head>
+<body class="bg-gray-100 font-sans">
+
+<main class="container mx-auto py-8">
+    <h1 class="text-2xl font-bold mb-4">Список пользователей</h1>
+    <a href="/user-views/create" class="inline-block bg-green-500 hover:bg-green-700 text-white font-bold py-2 px-4 rounded mb-4">Добавить пользователя</a>
+    <ul class="list-none space-y-2">
+        <% users.forEach(function(user) { %>
+            <li class="bg-white shadow-md rounded p-4 flex items-center justify-between">
+                <span><%= user.username %> - <%= user.email %></span>
+                <div class="flex space-x-2">
+                    <a href="/user-views/edit/<%= user.id %>" class="bg-yellow-500 hover:bg-yellow-700 text-white font-bold py-2 px-4 rounded">Редактировать</a>
+                    <button
+                            class="bg-red-500 hover:bg-red-700 text-white font-bold py-2 px-4 rounded"
+                            onclick="if (confirm('Вы уверены, что хотите удалить этого пользователя?')) {
+                                    fetch('/user-views/delete/<%= user.id %>', {
+                                    method: 'POST',
+                                    headers: {
+                                    'Content-Type': 'application/x-www-form-urlencoded',
+                                    },
+                                    body: '_method=DELETE'
+                                    }).then(response => {
+                                    if (response.ok) {
+                                    window.location.reload();
+                                    } else {
+                                    alert('Ошибка при удалении пользователя.');
+                                    }
+                                    }).catch(error => {
+                                    console.error('Ошибка:', error);
+                                    alert('Произошла ошибка при удалении пользователя.');
+                                    });
+                                    }"
+                    >Удалить</button>
+                </div>
+            </li>
+        <% }) %>
+    </ul>
+</main>
+<script src="/js/time_loader.js"></script>
+<script src="/js/page_active.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/toastify-js/src/toastify.min.js"></script>
+</body>
+</html>

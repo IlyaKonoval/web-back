@@ -1,0 +1,60 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id             Int       @id @default(autoincrement())
+  username       String
+  email          String    @unique
+  password       String
+  registrationDate DateTime  @default(now())
+  projects       Project[]
+  comments       Comment[]
+  devices        Device[]
+  reviews        Review[]
+}
+
+model Project {
+  id          Int       @id @default(autoincrement())
+  title       String
+  description String?
+  githubLink  String?
+  user        User      @relation(fields: [userId], references: [id])
+  userId      Int
+  comments    Comment[]
+  reviews     Review[]
+}
+
+model Comment {
+  id          Int       @id @default(autoincrement())
+  text        String
+  createdAt   DateTime  @default(now())
+  user        User      @relation(fields: [userId], references: [id])
+  userId      Int
+  project     Project   @relation(fields: [projectId], references: [id])
+  projectId   Int
+}
+
+model Device {
+  id          Int       @id @default(autoincrement())
+  userAgent   String
+  loginTime   DateTime  @default(now())
+  user        User      @relation(fields: [userId], references: [id])
+  userId      Int
+}
+
+model Review {
+  id        Int      @id @default(autoincrement())
+  text      String
+  rating    Int
+  createdAt DateTime @default(now())
+  user      User     @relation(fields: [userId], references: [id])
+  userId    Int
+  project   Project  @relation(fields: [projectId], references: [id])
+  projectId Int
+}

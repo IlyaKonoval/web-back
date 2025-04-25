@@ -1,0 +1,28 @@
+<div class="flex justify-center items-center h-screen bg-gray-100">
+        <div class="bg-white shadow-md rounded-lg p-8 text-center">
+                <% if (isAuthenticated) { %>
+                        <button id="logout-button" class="bg-red-500 hover:bg-red-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline">Выйти</button>
+                        <script>
+                                document.getElementById('logout-button').addEventListener('click', function() {
+                                        window.location.href = '/promise/logout';
+                                });
+                        </script>
+                <% } else { %>
+                        <button id="auth-button" class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline">Авторизоваться</button>
+                        <script>
+                                document.getElementById('auth-button').addEventListener('click', function() {
+                                        window.location.href = '/promise/auth';
+                                });
+                        </script>
+                <% } %>
+        </div>
+</div>
+
+<main class="bg-gray-100 py-8">
+        <% if (isAuthenticated) { %>
+                <div class="container mx-auto p-6 bg-white shadow-md rounded-lg">
+                        <div class="preloader"></div>
+                </div>
+                <script src="/js/promise.js"></script>
+        <% } %>
+</main>
