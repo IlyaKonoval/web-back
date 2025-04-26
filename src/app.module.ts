@@ -2,6 +2,10 @@ import { Module, NestModule, MiddlewareConsumer } from '@nestjs/common';
 import { AppController } from './app.controller';
 import { PromiseController } from './promise.controller';
 import { UsersModule } from './users/users.module';
+import { DevicesModule } from './devices/devices.module';
+import { ProjectsModule } from './projects/projects.module';
+import { CommentsModule } from './comments/comments.module';
+import { ReviewsModule } from './reviews/reviews.module';
 import { AuthModule } from './auth/auth.module';
 import { ConfigModule } from '@nestjs/config';
 import { AuthMiddleware } from './auth/middleware/auth.middleware';
@@ -12,6 +16,10 @@ import { UserMiddleware } from './auth/middleware/user.middleware';
   providers: [],
   imports: [
     UsersModule,
+    DevicesModule,
+    ProjectsModule,
+    CommentsModule,
+    ReviewsModule,
     ConfigModule.forRoot({
       isGlobal: true,
     }),

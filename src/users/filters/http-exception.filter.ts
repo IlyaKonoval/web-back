@@ -25,15 +25,17 @@ export class HttpExceptionFilter implements ExceptionFilter {
     }`;
     this.logger.error(logMessage);
 
-    response.status(status).json({
-      statusCode: status,
-      timestamp: new Date().toISOString(),
-      path: request.url,
-      message:
-        typeof exceptionResponse === 'string'
-          ? exceptionResponse
-          : (exceptionResponse as { message: string[] | string })?.message ||
-            'Internal Server Error',
-    });
+    if (!response.headersSent) {
+      response.status(status).json({
+        statusCode: status,
+        timestamp: new Date().toISOString(),
+        path: request.url,
+        message:
+          typeof exceptionResponse === 'string'
+            ? exceptionResponse
+            : (exceptionResponse as { message: string[] | string })?.message ||
+              'Internal Server Error',
+      });
+    }
   }
 }

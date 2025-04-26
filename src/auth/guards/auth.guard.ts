@@ -1,4 +1,9 @@
-import { Injectable, CanActivate, ExecutionContext } from '@nestjs/common';
+import {
+  Injectable,
+  CanActivate,
+  ExecutionContext,
+  UnauthorizedException,
+} from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
 import { IS_PUBLIC_KEY } from '../decorators/public.decorator';
 import { verifySession } from 'supertokens-node/recipe/session/framework/express';
@@ -39,6 +44,18 @@ export class AuthGuard implements CanActivate {
         }
       });
     });
+
+    if (!authorized) {
+      // Проверяем, является ли запрос API запросом или запросом страницы
+      const isApiRequest = req.path.startsWith('/api/');
+
+      if (isApiRequest) {
+        throw new UnauthorizedException('unauthorised');
+      } else {
+        res.redirect('/auth/signin');
+        return false;
+      }
+    }
 
     return authorized;
   }
