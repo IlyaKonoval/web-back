@@ -16,34 +16,54 @@ import {
 import { UsersService } from './users.service';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
-import { Response, Request } from 'express';
+import { Response } from 'express';
 import { ApiExcludeController } from '@nestjs/swagger';
 import { Roles } from '../auth/decorators/roles.decorator';
 import { Role } from '@prisma/client';
 import { AuthGuard } from '../auth/guards/auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
+import { SessionContainer } from 'supertokens-node/recipe/session';
+import { AuthService } from '../auth/auth.service';
+
+// Определяем интерфейс для запроса с сессией
+interface RequestWithSession extends Request {
+  session?: SessionContainer;
+}
 
 @ApiExcludeController()
 @Controller('user-views')
 @UseGuards(AuthGuard, RolesGuard)
 @Roles(Role.ADMIN)
 export class UsersViewController {
-  constructor(private readonly usersService: UsersService) {}
+  constructor(
+    private readonly usersService: UsersService,
+    private readonly authService: AuthService, // Добавляем AuthService как зависимость
+  ) {}
 
   @Get()
   @Render('users_view/index_user')
-  async showUsers(@Req() req: Request) {
+  async showUsers(@Req() req: RequestWithSession) {
     try {
       const users = await this.usersService.findAll();
+
+      let currentUser: string | null = null;
+      if (req.session) {
+        if (typeof req.session.getUserId === 'function') {
+          currentUser = req.session.getUserId();
+        }
+      }
+
       return {
         users,
         title: 'Список пользователей',
         bodyClass: 'bg-gray-100',
         mainClass: 'p-4',
-        currentUser: req.session ? req.session.getUserId() : null,
+        currentUser,
       };
     } catch (error) {
-      console.error('Error fetching users_view for view:', error);
+      const errorMessage =
+        error instanceof Error ? error.message : 'Неизвестная ошибка';
+      console.error('Error fetching users for view:', errorMessage);
       return {
         users: [],
         title: 'Ошибка загрузки пользователей',
@@ -73,14 +93,19 @@ export class UsersViewController {
       await this.usersService.create(createUserDto);
       res.redirect('/user-views');
     } catch (error) {
-      console.error('Error creating user from view:', error);
+      const errorMessage =
+        error instanceof ConflictException || error instanceof NotFoundException
+          ? error.message
+          : 'Произошла ошибка при создании. Проверьте данные и попробуйте снова.';
+
+      console.error(
+        'Error creating user from view:',
+        error instanceof Error ? error.message : error,
+      );
+
       res.render('users_view/create', {
         title: 'Ошибка создания пользователя',
-        errorMessage:
-          error instanceof ConflictException ||
-          error instanceof NotFoundException
-            ? error.message
-            : 'Произошла ошибка при создании. Проверьте данные и попробуйте снова.',
+        errorMessage,
         bodyClass: 'bg-red-100',
         mainClass: 'p-4',
         formData: {
@@ -104,7 +129,12 @@ export class UsersViewController {
         errorMessage: null,
       };
     } catch (error) {
-      console.error(`Error fetching user ${id} for edit view:`, error);
+      const errorMessage =
+        error instanceof Error
+          ? error.message
+          : `Не удалось загрузить пользователя с ID ${id}`;
+      console.error(`Error fetching user ${id} for edit view:`, errorMessage);
+
       return {
         title: 'Ошибка загрузки пользователя',
         errorMessage: `Не удалось загрузить пользователя с ID ${id}.`,
@@ -132,7 +162,10 @@ export class UsersViewController {
       await this.usersService.update(id, updateUserDto);
       res.redirect('/user-views');
     } catch (error) {
-      console.error(`Error updating user ${id} from view:`, error);
+      console.error(
+        `Error updating user ${id} from view:`,
+        error instanceof Error ? error.message : error,
+      );
 
       let currentUserData = { id, ...updateUserDto };
       try {
@@ -141,18 +174,19 @@ export class UsersViewController {
       } catch (findError) {
         console.error(
           `Could not refetch user ${id} after update error`,
-          findError,
+          findError instanceof Error ? findError.message : findError,
         );
       }
       delete currentUserData.password;
 
+      const errorMessage =
+        error instanceof ConflictException || error instanceof NotFoundException
+          ? error.message
+          : 'Произошла ошибка при обновлении. Проверьте данные и попробуйте снова.';
+
       res.render('users_view/edit', {
         title: 'Ошибка редактирования',
-        errorMessage:
-          error instanceof ConflictException ||
-          error instanceof NotFoundException
-            ? error.message
-            : 'Произошла ошибка при обновлении. Проверьте данные и попробуйте снова.',
+        errorMessage,
         bodyClass: 'bg-red-100',
         mainClass: 'p-4',
         user: currentUserData,
@@ -169,7 +203,10 @@ export class UsersViewController {
       await this.usersService.remove(id);
       res.redirect('/user-views');
     } catch (error) {
-      console.error(`Error deleting user ${id} from view:`, error);
+      console.error(
+        `Error deleting user ${id} from view:`,
+        error instanceof Error ? error.message : error,
+      );
       res.redirect(
         `/user-views?error=${encodeURIComponent('Не удалось удалить пользователя.')}`,
       );
@@ -185,7 +222,10 @@ export class UsersViewController {
       await this.usersService.remove(id);
       res.redirect('/user-views');
     } catch (error) {
-      console.error(`Error deleting user ${id} from view:`, error);
+      console.error(
+        `Error deleting user ${id} from view:`,
+        error instanceof Error ? error.message : error,
+      );
       res.redirect(
         `/user-views?error=${encodeURIComponent('Не удалось удалить пользователя.')}`,
       );
@@ -198,14 +238,14 @@ export class UsersViewController {
     @Res() res: Response,
   ) {
     try {
-      // Import AuthService and call promoteToAdmin
-      const { AuthService } = await import('../auth/auth.service');
-      const authService = res.app.get(AuthService);
-      await authService.promoteToAdmin(id);
-
+      // Используем внедренный AuthService вместо динамического импорта
+      await this.authService.promoteToAdmin(id);
       res.redirect('/user-views');
     } catch (error) {
-      console.error(`Error promoting user ${id} to admin:`, error);
+      console.error(
+        `Error promoting user ${id} to admin:`,
+        error instanceof Error ? error.message : error,
+      );
       res.redirect(
         `/user-views?error=${encodeURIComponent('Не удалось сделать пользователя администратором.')}`,
       );

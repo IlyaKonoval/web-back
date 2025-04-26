@@ -19,7 +19,6 @@ export class UserMiddleware implements NestMiddleware {
         if (userId) {
           const user = await this.authService.getCurrentUser(userId);
 
-          // Расширяем тип для res.locals
           interface ResponseLocals extends Record<string, unknown> {
             user?: Partial<User>;
           }

@@ -3,6 +3,12 @@ import { Reflector } from '@nestjs/core';
 import { ROLES_KEY } from '../decorators/roles.decorator';
 import { AuthService } from '../auth.service';
 import { Role } from '@prisma/client';
+import { Request } from 'express';
+import { SessionContainer } from 'supertokens-node/recipe/session';
+
+interface RequestWithSession extends Request {
+  session?: SessionContainer;
+}
 
 @Injectable()
 export class RolesGuard implements CanActivate {
@@ -21,12 +27,17 @@ export class RolesGuard implements CanActivate {
       return true;
     }
 
-    const req = context.switchToHttp().getRequest();
-    if (!req.session) {
+    const req = context.switchToHttp().getRequest<RequestWithSession>();
+
+    if (!req.session || typeof req.session.getUserId !== 'function') {
       return false;
     }
 
     const userId = req.session.getUserId();
+
+    if (!userId) {
+      return false;
+    }
 
     if (requiredRoles.includes(Role.ADMIN)) {
       return await this.authService.isAdmin(userId);

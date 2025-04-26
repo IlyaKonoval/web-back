@@ -1,13 +1,5 @@
-import {
-  Controller,
-  Get,
-  Render,
-  Res,
-  Query,
-  Req,
-  UseGuards,
-} from '@nestjs/common';
-import { Response, Request } from 'express';
+import { Controller, Get, Render, Req } from '@nestjs/common';
+import { Request } from 'express';
 import { ApiExcludeController } from '@nestjs/swagger';
 import { Public } from './auth/decorators/public.decorator';
 

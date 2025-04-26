@@ -81,10 +81,8 @@ export class UsersService {
     limit: number;
   }) {
     try {
-      // Расчет пропуска записей на основе текущей страницы
       const skip = (page - 1) * limit;
 
-      // Запрос на выборку пользователей с пагинацией
       const [data, total] = await Promise.all([
         this.prisma.user.findMany({
           skip,

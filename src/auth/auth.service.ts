@@ -3,7 +3,7 @@ import { PrismaService } from '../../prisma/prisma.service';
 import { Role, User } from '@prisma/client';
 import EmailPassword from 'supertokens-node/recipe/emailpassword';
 import Session from 'supertokens-node/recipe/session';
-import UserRoles from 'supertokens-node/recipe/userroles';
+import UserRolesRecipe from 'supertokens-node/recipe/userroles';
 import { AuthModuleConfig } from './auth.module';
 
 @Injectable()
@@ -19,7 +19,7 @@ export class AuthService {
     username: string,
   ): Promise<Partial<User>> {
     try {
-      // First check if the user already exists in our database
+      // Проверяем, существует ли пользователь в БД
       const existingUser = await this.prisma.user.findUnique({
         where: { email },
       });
@@ -29,33 +29,44 @@ export class AuthService {
           'Пользователь с таким email уже существует',
         );
       }
-      const superTokensResponse = await EmailPassword.signUp({
+
+      // Обновленный вызов signUp
+      const superTokensResponse = await EmailPassword.signUp(
+        'public',
         email,
         password,
-        tenantId: 'public',
-      });
+      );
 
       if (superTokensResponse.status === 'OK') {
-        // Create user in our database
         const user = await this.prisma.user.create({
           data: {
             email,
             username,
-            password: 'MANAGED_BY_SUPERTOKENS', // We don't store actual passwords
+            password: 'MANAGED_BY_SUPERTOKENS',
             role: Role.USER,
           },
         });
 
-        // Set the user role in SuperTokens
-        await UserRoles.createNewRoleOrAddPermissions('public', 'user', []);
-        await UserRoles.createNewRoleOrAddPermissions('public', 'admin', []);
+        try {
+          await UserRolesRecipe.addRoleToUser(
+            'public',
+            superTokensResponse.user.id,
+            'user' as any,
+          );
+          await UserRolesRecipe.addRoleToUser(
+            'public',
+            user.email,
+            'admin' as any,
+          );
 
-        // Fixed: Correct method call with all required parameters
-        await UserRoles.addRoleToUser(
-          'public',
-          superTokensResponse.user.id,
-          'user',
-        );
+          await UserRolesRecipe.addRoleToUser(
+            'public',
+            superTokensResponse.user.id,
+            'user',
+          );
+        } catch (roleError) {
+          console.error('Error setting up user roles:', roleError);
+        }
 
         return {
           id: user.id,
@@ -74,11 +85,12 @@ export class AuthService {
 
   async signin(email: string, password: string): Promise<Partial<User> | null> {
     try {
-      const signInResponse = await EmailPassword.signIn({
+      // Обновленный вызов signIn
+      const signInResponse = await EmailPassword.signIn(
+        'public',
         email,
         password,
-        tenantId: 'public', // Required third argument
-      });
+      );
 
       if (signInResponse.status === 'OK') {
         const user = await this.prisma.user.findUnique({
@@ -133,8 +145,24 @@ export class AuthService {
 
   async getUserRoles(userId: string): Promise<string[]> {
     try {
-      const roles = await UserRoles.getRolesForUser('public', userId);
-      return roles.roles;
+      // Безопасный вызов API для получения ролей
+      const rolesResponse = await UserRolesRecipe.getRolesForUser(
+        'public',
+        userId,
+      );
+
+      // Проверяем наличие свойства roles в ответе
+      if (
+        rolesResponse &&
+        typeof rolesResponse === 'object' &&
+        'roles' in rolesResponse
+      ) {
+        const roles = rolesResponse.roles;
+        if (Array.isArray(roles)) {
+          return roles;
+        }
+      }
+      return [];
     } catch (error) {
       console.error('Error getting user roles:', error);
       return [];
@@ -143,11 +171,9 @@ export class AuthService {
 
   async hasRole(userId: string, role: string): Promise<boolean> {
     try {
-      return await UserRoles.doesUserHaveRole(
-        'public',
-        userId,
-        role.toLowerCase(),
-      );
+      // Самый надежный способ проверки роли - получить все роли и проверить наличие нужной
+      const roles = await this.getUserRoles(userId);
+      return roles.includes(role.toLowerCase());
     } catch (error) {
       console.error('Error checking user role:', error);
       return false;
@@ -177,9 +203,11 @@ export class AuthService {
       });
 
       try {
-        await UserRoles.addRoleToUser('public', user.email, 'admin');
+        // Исправлено: передаем роль как строку
+        await UserRolesRecipe.addRoleToUser('public', user.email, 'admin');
       } catch (e) {
         console.error('Could not update role in SuperTokens', e);
+        // Продолжаем выполнение, даже если обновление роли в SuperTokens не удалось
       }
 
       return true;

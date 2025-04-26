@@ -1,19 +1,15 @@
-import {
-  Controller,
-  Get,
-  Post,
-  Body,
-  Render,
-  Res,
-  Req,
-  UseGuards,
-} from '@nestjs/common';
+import { Controller, Get, Post, Body, Render, Res, Req } from '@nestjs/common';
 import { AuthService } from './auth.service';
 import { SignupDto } from './dto/signup.dto';
 import { SigninDto } from './dto/signin.dto';
 import { Public } from './decorators/public.decorator';
 import { Response, Request } from 'express';
 import { ApiExcludeController } from '@nestjs/swagger';
+import { SessionContainer } from 'supertokens-node/recipe/session';
+
+interface RequestWithSession extends Request {
+  session?: SessionContainer;
+}
 
 @ApiExcludeController()
 @Controller('auth')
@@ -55,11 +51,14 @@ export class AuthViewController {
       );
       return res.redirect('/auth/signin?registered=true');
     } catch (error) {
+      const errorMessage =
+        error instanceof Error ? error.message : 'Произошла неизвестная ошибка';
+
       return res.render('auth/register', {
         title: 'Регистрация аккаунта',
         bodyClass: 'bg-gray-100',
         mainClass: 'container mx-auto py-8',
-        errorMessage: error.message,
+        errorMessage,
         formData: {
           username: signupDto.username,
           email: signupDto.email,
@@ -91,11 +90,14 @@ export class AuthViewController {
         });
       }
     } catch (error) {
+      const errorMessage =
+        error instanceof Error ? error.message : 'Произошла неизвестная ошибка';
+
       return res.render('auth/login', {
         title: 'Вход в аккаунт',
         bodyClass: 'bg-gray-100',
         mainClass: 'container mx-auto py-8',
-        errorMessage: error.message,
+        errorMessage,
         formData: {
           email: signinDto.email,
         },
@@ -104,14 +106,18 @@ export class AuthViewController {
   }
 
   @Get('signout')
-  async logout(@Req() req: Request, @Res() res: Response) {
+  async logout(@Req() req: RequestWithSession, @Res() res: Response) {
     try {
-      if (req.session) {
-        await this.authService.signout(req.session.getHandle());
+      if (req.session && typeof req.session.getHandle === 'function') {
+        const sessionHandle = req.session.getHandle();
+        await this.authService.signout(sessionHandle);
       }
       return res.redirect('/');
     } catch (error) {
-      console.error('Error during logout:', error);
+      console.error(
+        'Error during logout:',
+        error instanceof Error ? error.message : error,
+      );
       return res.redirect('/');
     }
   }

@@ -22,8 +22,6 @@ async function bootstrap() {
   );
 
   app.useGlobalFilters(new HttpExceptionFilter());
-
-  // Configure CORS for SuperTokens
   app.enableCors({
     origin: process.env.FRONTEND_URL || 'http://localhost:3000',
     allowedHeaders: ['content-type', ...supertokens.getAllCORSHeaders()],
@@ -62,15 +60,21 @@ async function bootstrap() {
 
   try {
     await app.listen(3000);
-    console.log('Application listening on port 3000');
-    console.log('Swagger UI available at http://localhost:3000/api');
+    console.log('Приложение запущено на порту 3000');
+    console.log('Swagger UI доступен по адресу http://localhost:3000/api');
   } catch (error: unknown) {
     if (error instanceof Error) {
-      console.error('Failed to start application:', error.message);
+      console.error(
+        'Не удалось запустить приложение:',
+        error.message,
+        error.stack,
+      );
     } else {
-      console.error('Failed to start application (unknown error):', error);
+      console.error(
+        'Не удалось запустить приложение: Произошла неизвестная ошибка',
+        error,
+      );
     }
-    process.exit(1);
   }
 }
 
