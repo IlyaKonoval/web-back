@@ -19,18 +19,15 @@ export class AuthService {
     username: string,
   ): Promise<Partial<User>> {
     try {
-      // Проверяем, существует ли пользователь в БД
       const existingUser = await this.prisma.user.findUnique({
         where: { email },
       });
-
       if (existingUser) {
         throw new ConflictException(
           'Пользователь с таким email уже существует',
         );
       }
 
-      // Обновленный вызов signUp
       const superTokensResponse = await EmailPassword.signUp(
         'public',
         email,
@@ -48,17 +45,6 @@ export class AuthService {
         });
 
         try {
-          await UserRolesRecipe.addRoleToUser(
-            'public',
-            superTokensResponse.user.id,
-            'user' as any,
-          );
-          await UserRolesRecipe.addRoleToUser(
-            'public',
-            user.email,
-            'admin' as any,
-          );
-
           await UserRolesRecipe.addRoleToUser(
             'public',
             superTokensResponse.user.id,
@@ -85,7 +71,6 @@ export class AuthService {
 
   async signin(email: string, password: string): Promise<Partial<User> | null> {
     try {
-      // Обновленный вызов signIn
       const signInResponse = await EmailPassword.signIn(
         'public',
         email,
@@ -126,9 +111,7 @@ export class AuthService {
   async getCurrentUser(userId: string): Promise<Partial<User> | null> {
     try {
       const user = await this.prisma.user.findFirst({
-        where: {
-          email: userId,
-        },
+        where: { email: userId },
         select: {
           id: true,
           username: true,
@@ -145,22 +128,13 @@ export class AuthService {
 
   async getUserRoles(userId: string): Promise<string[]> {
     try {
-      // Безопасный вызов API для получения ролей
       const rolesResponse = await UserRolesRecipe.getRolesForUser(
         'public',
         userId,
       );
 
-      // Проверяем наличие свойства roles в ответе
-      if (
-        rolesResponse &&
-        typeof rolesResponse === 'object' &&
-        'roles' in rolesResponse
-      ) {
-        const roles = rolesResponse.roles;
-        if (Array.isArray(roles)) {
-          return roles;
-        }
+      if (rolesResponse && 'roles' in rolesResponse) {
+        return Array.isArray(rolesResponse.roles) ? rolesResponse.roles : [];
       }
       return [];
     } catch (error) {
@@ -171,7 +145,6 @@ export class AuthService {
 
   async hasRole(userId: string, role: string): Promise<boolean> {
     try {
-      // Самый надежный способ проверки роли - получить все роли и проверить наличие нужной
       const roles = await this.getUserRoles(userId);
       return roles.includes(role.toLowerCase());
     } catch (error) {
@@ -183,11 +156,8 @@ export class AuthService {
   async isAdmin(userId: string): Promise<boolean> {
     try {
       const user = await this.prisma.user.findFirst({
-        where: {
-          email: userId,
-        },
+        where: { email: userId },
       });
-
       return user?.role === Role.ADMIN;
     } catch (error) {
       console.error('Error checking admin status:', error);
@@ -203,11 +173,9 @@ export class AuthService {
       });
 
       try {
-        // Исправлено: передаем роль как строку
         await UserRolesRecipe.addRoleToUser('public', user.email, 'admin');
       } catch (e) {
         console.error('Could not update role in SuperTokens', e);
-        // Продолжаем выполнение, даже если обновление роли в SuperTokens не удалось
       }
 
       return true;

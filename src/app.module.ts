@@ -10,10 +10,14 @@ import { AuthModule } from './auth/auth.module';
 import { ConfigModule } from '@nestjs/config';
 import { AuthMiddleware } from './auth/middleware/auth.middleware';
 import { UserMiddleware } from './auth/middleware/user.middleware';
+import { ProjectsViewController } from './projects/project-view.controller';
+import { PrismaService } from '../prisma/prisma.service';
+import { ProjectsService } from './projects/projects.service';
+import { AuthService } from './auth/auth.service';
 
 @Module({
-  controllers: [AppController, PromiseController],
-  providers: [],
+  controllers: [AppController, PromiseController, ProjectsViewController],
+  providers: [PrismaService, ProjectsService, AuthService],
   imports: [
     UsersModule,
     DevicesModule,
@@ -24,12 +28,12 @@ import { UserMiddleware } from './auth/middleware/user.middleware';
       isGlobal: true,
     }),
     AuthModule.forRoot({
-      apiDomain: process.env.SUPERTOKENS_API_DOMAIN || 'http://localhost:3000',
-      apiBasePath: process.env.SUPERTOKENS_API_BASE_PATH || '/auth/api',
-      appName: process.env.SUPERTOKENS_APP_NAME || 'Portfolio App',
+      apiDomain: process.env.API_DOMAIN || 'http://localhost:3000',
+      apiBasePath: process.env.API_BASE_PATH || '/auth',
+      appName: process.env.APP_NAME || 'My App',
       connectionUri:
-        process.env.SUPERTOKENS_CONNECTION_URI || 'https://try.supertokens.com',
-      apiKey: process.env.SUPERTOKENS_API_KEY || '',
+        process.env.SUPERTOKENS_URI || 'https://try.supertokens.io',
+      apiKey: process.env.SUPERTOKENS_API_KEY || 'your-api-key',
     }),
   ],
 })

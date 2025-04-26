@@ -1,11 +1,14 @@
 import { Controller, Get, Render } from '@nestjs/common';
 import { ApiExcludeController } from '@nestjs/swagger';
-import { Public } from './auth/decorators/public.decorator'; // Убедитесь, что импорт корректный
+import { Public } from './auth/decorators/public.decorator';
+import { PrismaService } from '../prisma/prisma.service';
 
 @ApiExcludeController()
 @Controller()
 export class AppController {
-  @Public() // Добавить этот декоратор
+  constructor(private prisma: PrismaService) {}
+
+  @Public()
   @Get('/')
   @Render('index')
   root() {
@@ -16,7 +19,7 @@ export class AppController {
     };
   }
 
-  @Public() // Добавить этот декоратор
+  @Public()
   @Get('/index')
   @Render('index')
   index() {
@@ -30,11 +33,27 @@ export class AppController {
   @Public()
   @Get('/portfolio')
   @Render('portfolio')
-  portfolio() {
+  async portfolio() {
+    const projects = await this.prisma.project.findMany({
+      take: 6,
+      include: {
+        user: {
+          select: {
+            id: true,
+            username: true,
+          },
+        },
+      },
+      orderBy: {
+        id: 'desc',
+      },
+    });
+
     return {
       title: 'Portfolio',
       bodyClass: 'portfolio-body',
       mainClass: 'portfolio-main',
+      projects,
     };
   }
 }

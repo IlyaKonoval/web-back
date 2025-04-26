@@ -1,33 +1,45 @@
-<h1 class="text-3xl font-bold mb-6">My Projects</h1>
+<h1 class="text-3xl font-bold mb-6">Projects</h1>
+
+<% if (locals.isAuthenticated) { %>
+    <div class="mb-6 flex justify-between items-center">
+        <a href="/projects/create" class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded">
+            Create New Project
+        </a>
+        <a href="/projects/my" class="bg-green-500 hover:bg-green-700 text-white font-bold py-2 px-4 rounded">
+            My Projects
+        </a>
+    </div>
+<% } %>
+
 <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-    <div class="bg-white shadow-md rounded-lg p-6">
-        <h2 class="text-xl font-semibold mb-2">Project 1</h2>
-        <p class="text-gray-700 mb-4">Predicting medical costs</p>
-        <a class="inline-block bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded" href="https://github.com/IlyaKonoval/Medical-Cost-Personal">More information</a>
-    </div>
-    <div class="bg-white shadow-md rounded-lg p-6">
-        <h2 class="text-xl font-semibold mb-2">Project 2</h2>
-        <p class="text-gray-700 mb-4">Implementation of banking services</p>
-        <a class="inline-block bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded" href="https://github.com/IlyaKonoval/Bank_service">More information</a>
-    </div>
-    <div class="bg-white shadow-md rounded-lg p-6">
-        <h2 class="text-xl font-semibold mb-2">Project 3</h2>
-        <p class="text-gray-700 mb-4">Description</p>
-        <a class="inline-block bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded" href="#">More information</a>
-    </div>
-    <div class="bg-white shadow-md rounded-lg p-6">
-        <h2 class="text-xl font-semibold mb-2">Project 4</h2>
-        <p class="text-gray-700 mb-4">Description</p>
-        <a class="inline-block bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded" href="#">More information</a>
-    </div>
-    <div class="bg-white shadow-md rounded-lg p-6">
-        <h2 class="text-xl font-semibold mb-2">Project 5</h2>
-        <p class="text-gray-700 mb-4">Description</p>
-        <a class="inline-block bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded" href="#">More information</a>
-    </div>
-    <div class="bg-white shadow-md rounded-lg p-6">
-        <h2 class="text-xl font-semibold mb-2">Project 6</h2>
-        <p class="text-gray-700 mb-4">Description</p>
-        <a class="inline-block bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded" href="#">More information</a>
-    </div>
+    <% if (projects && projects.length > 0) { %>
+        <% projects.forEach(function(project) { %>
+            <div class="bg-white shadow-md rounded-lg p-6">
+                <h2 class="text-xl font-semibold mb-2"><%= project.title %></h2>
+                <p class="text-gray-700 mb-4 h-20 overflow-hidden">
+                    <%= project.description || 'No description provided' %>
+                </p>
+                <div class="flex items-center text-sm text-gray-500 mb-4">
+                    <span>By: <%= project.user ? project.user.username : 'Unknown' %></span>
+                </div>
+                <div class="flex justify-between items-center">
+                    <a class="inline-block bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded"
+                       href="/projects/<%= project.id %>">View Details</a>
+                    <% if (project.githubLink) { %>
+                        <a class="text-gray-600 hover:text-gray-900"
+                           href="<%= project.githubLink %>" target="_blank">GitHub</a>
+                    <% } %>
+                </div>
+            </div>
+        <% }); %>
+    <% } else { %>
+        <div class="col-span-full text-center py-10">
+            <p class="text-gray-500">No projects found.</p>
+            <% if (locals.isAuthenticated) { %>
+                <a href="/projects/create" class="text-blue-500 hover:text-blue-700 mt-4 inline-block">
+                    Create your first project
+                </a>
+            <% } %>
+        </div>
+    <% } %>
 </div>

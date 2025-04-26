@@ -55,12 +55,24 @@ export class AuthModule {
 
     return {
       module: AuthModule,
+      imports: [PrismaModule],
+      controllers: [AuthController, AuthViewController],
       providers: [
+        AuthService,
+        {
+          provide: APP_GUARD,
+          useClass: AuthGuard,
+        },
+        {
+          provide: APP_GUARD,
+          useClass: RolesGuard,
+        },
         {
           provide: 'AUTH_CONFIG',
           useValue: config,
         },
       ],
+      exports: [AuthService],
     };
   }
 }

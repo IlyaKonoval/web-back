@@ -2,7 +2,14 @@
     <div class="container mx-auto text-center">
         <div class="mb-8">
             <p class="text-xl text-gray-600">ML-engineer</p>
-            <h1 class="text-4xl font-bold text-blue-700">Hello,<br>I'm Ilya Konovalov</h1>
+            <h1 class="text-4xl font-bold text-blue-700">
+                Hello,<br>
+                <% if (locals.user) { %>
+                    I'm <%= user.username %>
+                <% } else { %>
+                    I'm Ilya Konovalov
+                <% } %>
+            </h1>
         </div>
         <div class="bg-white shadow-md rounded-lg p-8 max-w-lg mx-auto">
             <blockquote class="text-lg italic text-gray-800">
@@ -10,5 +17,25 @@
                 Лёгкие времена рождают слабых людей. Слабые люди создают тяжёлые времена»
             </blockquote>
         </div>
+
+        <% if (locals.user) { %>
+            <div class="mt-8">
+                <a href="/projects/my" class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded">
+                    My Projects
+                </a>
+                <a href="/promise" class="bg-green-500 hover:bg-green-700 text-white font-bold py-2 px-4 rounded ml-4">
+                    Community Comments
+                </a>
+            </div>
+        <% } else { %>
+            <div class="mt-8">
+                <a href="/auth/signin" class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded">
+                    Sign In
+                </a>
+                <a href="/auth/signup" class="bg-green-500 hover:bg-green-700 text-white font-bold py-2 px-4 rounded ml-4">
+                    Register
+                </a>
+            </div>
+        <% } %>
     </div>
 </div>
