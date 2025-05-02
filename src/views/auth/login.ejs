@@ -1,7 +1,7 @@
 <div class="flex items-center justify-center min-h-screen bg-gray-100">
     <div class="px-8 py-6 mt-4 text-left bg-white shadow-lg w-full max-w-md">
         <h3 class="text-2xl font-bold text-center">Вход в аккаунт</h3>
-        <% if (errorMessage) { %>
+        <% if (locals.errorMessage) { %>
             <div class="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mt-4">
                 <%= errorMessage %>
             </div>
@@ -11,7 +11,7 @@
                 Регистрация успешно завершена. Пожалуйста, войдите в систему.
             </div>
         <% } %>
-        <form action="/auth/signin" method="POST">
+        <form action="/auth/login" method="POST">
             <div class="mt-4">
                 <div>
                     <label class="block text-gray-700 text-sm font-bold mb-2" for="email">Email</label>
@@ -27,47 +27,22 @@
                 <div class="flex items-center justify-between mt-6">
                     <button type="submit"
                             class="px-6 py-2 text-white bg-blue-600 rounded-lg hover:bg-blue-900">Войти</button>
-                    <a href="/auth/signup" class="text-sm text-blue-600 hover:underline">Зарегистрироваться</a>
+                    <a href="/auth/register" class="text-sm text-blue-600 hover:underline">Зарегистрироваться</a>
                 </div>
-            </div>
-        </form>
-    </div>
-</div>
-
-<!-- src/views/auth/register.ejs -->
-<div class="flex items-center justify-center min-h-screen bg-gray-100">
-    <div class="px-8 py-6 mt-4 text-left bg-white shadow-lg w-full max-w-md">
-        <h3 class="text-2xl font-bold text-center">Регистрация аккаунта</h3>
-        <% if (errorMessage) { %>
-            <div class="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mt-4">
-                <%= errorMessage %>
-            </div>
-        <% } %>
-        <form action="/auth/signup" method="POST">
-            <div class="mt-4">
-                <div>
-                    <label class="block text-gray-700 text-sm font-bold mb-2" for="username">Имя пользователя</label>
-                    <input type="text" id="username" name="username" placeholder="Имя пользователя" required
-                           class="w-full px-4 py-2 mt-2 border rounded-md focus:outline-none focus:ring-1 focus:ring-blue-600"
-                           value="<%= locals.formData ? formData.username : '' %>">
-                </div>
-                <div class="mt-4">
-                    <label class="block text-gray-700 text-sm font-bold mb-2" for="email">Email</label>
-                    <input type="email" id="email" name="email" placeholder="Email" required
-                           class="w-full px-4 py-2 mt-2 border rounded-md focus:outline-none focus:ring-1 focus:ring-blue-600"
-                           value="<%= locals.formData ? formData.email : '' %>">
-                </div>
-                <div class="mt-4">
-                    <label class="block text-gray-700 text-sm font-bold mb-2" for="password">Пароль</label>
-                    <input type="password" id="password" name="password" placeholder="Пароль" required
-                           class="w-full px-4 py-2 mt-2 border rounded-md focus:outline-none focus:ring-1 focus:ring-blue-600"
-                           minlength="6">
-                    <p class="text-xs text-gray-500 mt-1">Минимум 6 символов</p>
-                </div>
-                <div class="flex items-center justify-between mt-6">
-                    <button type="submit"
-                            class="px-6 py-2 text-white bg-green-600 rounded-lg hover:bg-green-900">Зарегистрироваться</button>
-                    <a href="/auth/signin" class="text-sm text-blue-600 hover:underline">Уже есть аккаунт? Войти</a>
+                <div class="mt-6">
+                    <div class="relative">
+                        <div class="absolute inset-0 flex items-center">
+                            <div class="w-full border-t border-gray-300"></div>
+                        </div>
+                        <div class="relative flex justify-center text-sm">
+                            <span class="px-2 bg-white text-gray-500">Или</span>
+                        </div>
+                    </div>
+                    <form action="/auth/guest-login" method="POST" class="mt-4">
+                        <button type="submit" class="w-full px-6 py-2 text-white bg-gray-600 rounded-lg hover:bg-gray-900">
+                            Войти как гость
+                        </button>
+                    </form>
                 </div>
             </div>
         </form>

@@ -1,12 +1,12 @@
 <div class="flex items-center justify-center min-h-screen bg-gray-100">
     <div class="px-8 py-6 mt-4 text-left bg-white shadow-lg w-full max-w-md">
         <h3 class="text-2xl font-bold text-center">Регистрация аккаунта</h3>
-        <% if (errorMessage) { %>
+        <% if (locals.errorMessage) { %>
             <div class="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mt-4">
                 <%= errorMessage %>
             </div>
         <% } %>
-        <form action="/auth/signup" method="POST">
+        <form action="/auth/register" method="POST">
             <div class="mt-4">
                 <div>
                     <label class="block text-gray-700 text-sm font-bold mb-2" for="username">Имя пользователя</label>
@@ -27,10 +27,16 @@
                            minlength="6">
                     <p class="text-xs text-gray-500 mt-1">Минимум 6 символов</p>
                 </div>
+                <div class="mt-4">
+                    <label class="block text-gray-700 text-sm font-bold mb-2" for="confirmPassword">Подтвердите пароль</label>
+                    <input type="password" id="confirmPassword" name="confirmPassword" placeholder="Подтвердите пароль" required
+                           class="w-full px-4 py-2 mt-2 border rounded-md focus:outline-none focus:ring-1 focus:ring-blue-600"
+                           minlength="6">
+                </div>
                 <div class="flex items-center justify-between mt-6">
                     <button type="submit"
                             class="px-6 py-2 text-white bg-green-600 rounded-lg hover:bg-green-900">Зарегистрироваться</button>
-                    <a href="/auth/signin" class="text-sm text-blue-600 hover:underline">Уже есть аккаунт? Войти</a>
+                    <a href="/auth/login" class="text-sm text-blue-600 hover:underline">Уже есть аккаунт? Войти</a>
                 </div>
             </div>
         </form>

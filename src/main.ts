@@ -27,6 +27,13 @@ async function bootstrap() {
     credentials: true,
   });
 
+  app.use(cookieParser());
+  app.use((req, res, next) => {
+    res.locals.currentPath = req.path;
+    res.locals.user = req.user;
+    next();
+  });
+
   const staticAssetsPath = join(__dirname, '..', 'public');
   app.useStaticAssets(staticAssetsPath);
   console.log('Static assets directory:', staticAssetsPath);
@@ -36,14 +43,13 @@ async function bootstrap() {
   app.setViewEngine('ejs');
 
   app.use(methodOverride('_method'));
-  // eslint-disable-next-line @typescript-eslint/no-unsafe-call
-  app.use(cookieParser());
 
   const config = new DocumentBuilder()
     .setTitle('My API')
     .setDescription('API для тестирования ручек')
     .setVersion('1.0')
-    .build(); // Removed Bearer auth configuration
+    .addBearerAuth()
+    .build();
 
   const document = SwaggerModule.createDocument(app, config);
   SwaggerModule.setup('api', app, document);

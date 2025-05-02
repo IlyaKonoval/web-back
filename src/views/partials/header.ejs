@@ -1,36 +1,75 @@
 <header class="bg-blue-500 text-white py-4">
     <nav class="container mx-auto flex justify-between items-center px-4">
         <ul class="flex space-x-4">
-            <li><a href="/" class="hover:text-blue-200">Home</a></li>
-            <li><a href="/portfolio" class="hover:text-blue-200">Portfolio</a></li>
-            <li><a href="/promise" class="hover:text-blue-200">Community</a></li>
-            <% if (locals.isAuthenticated) { %>
-                <li><a href="/projects/my" class="hover:text-blue-200">My Projects</a></li>
+            <li><a href="/" class="hover:text-blue-200 <%= locals.currentPath === '/' ? 'font-semibold border-b-2 border-white pb-1' : '' %>">Home</a></li>
+            <li><a href="/portfolio" class="hover:text-blue-200 <%= locals.currentPath === '/portfolio' ? 'font-semibold border-b-2 border-white pb-1' : '' %>">Portfolio</a></li>
+            <li><a href="/promise" class="hover:text-blue-200 <%= locals.currentPath === '/promise' ? 'font-semibold border-b-2 border-white pb-1' : '' %>">Community</a></li>
+            <% if (locals.user) { %>
+                <li><a href="/projects/my" class="hover:text-blue-200 <%= locals.currentPath && locals.currentPath.startsWith('/projects/my') ? 'font-semibold border-b-2 border-white pb-1' : '' %>">My Projects</a></li>
             <% } %>
             <% if (locals.user && locals.user.role === 'ADMIN') { %>
-                <li><a href="/user-views" class="hover:text-blue-200">User Management</a></li>
+                <li><a href="/user-views" class="hover:text-blue-200 <%= locals.currentPath && locals.currentPath.startsWith('/user-views') ? 'font-semibold border-b-2 border-white pb-1' : '' %>">User Management</a></li>
             <% } %>
         </ul>
         <div class="flex items-center space-x-4">
             <% if (locals.user) { %>
-                <div class="flex items-center">
-                    <span class="mr-2">
-                        <%= user.username %>
-                        <% if (user.role === 'ADMIN') { %>
-                            <span class="bg-yellow-500 text-xs font-semibold text-black px-2 py-1 rounded-full ml-1">Admin</span>
-                        <% } %>
-                    </span>
-                    <a href="/auth/signout" class="bg-red-500 hover:bg-red-600 text-white px-3 py-1 rounded text-sm">
-                        Sign Out
-                    </a>
+                <div class="relative group">
+                    <button class="flex items-center space-x-2 focus:outline-none">
+                        <div class="h-8 w-8 rounded-full bg-blue-600 flex items-center justify-center text-white font-medium">
+                            <%= user.username.charAt(0).toUpperCase() %>
+                        </div>
+                        <span class="mr-2 hidden md:block">
+                            <%= user.username %>
+                            <% if (user.role === 'ADMIN') { %>
+                                <span class="bg-yellow-500 text-xs font-semibold text-black px-2 py-1 rounded-full ml-1">Admin</span>
+                            <% } %>
+                            <% if (user.isGuest) { %>
+                                <span class="text-gray-300 text-xs">(Гость)</span>
+                            <% } %>
+                        </span>
+                        <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+                        </svg>
+                    </button>
+
+                    <!-- Выпадающее меню -->
+                    <div class="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg z-10 hidden group-hover:block">
+                        <div class="py-1">
+                            <div class="px-4 py-2 text-xs text-gray-500 border-b border-gray-200">
+                                <p class="font-medium"><%= user.email %></p>
+                            </div>
+
+                            <a href="/auth/profile" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
+                                Профиль
+                            </a>
+
+                            <% if (!user.isGuest) { %>
+                                <a href="/auth/change-password" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
+                                    Сменить пароль
+                                </a>
+                            <% } %>
+
+                            <% if (user.role === 'ADMIN') { %>
+                                <a href="/user-views" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
+                                    Управление пользователями
+                                </a>
+                            <% } %>
+
+                            <div class="border-t border-gray-200"></div>
+
+                            <a href="/auth/logout" class="block px-4 py-2 text-sm text-red-600 hover:bg-gray-100">
+                                Выход
+                            </a>
+                        </div>
+                    </div>
                 </div>
             <% } else { %>
                 <div class="flex space-x-2">
-                    <a href="/auth/signin" class="bg-blue-600 hover:bg-blue-700 text-white px-3 py-1 rounded text-sm">
-                        Sign In
+                    <a href="/auth/login" class="bg-blue-600 hover:bg-blue-700 text-white px-3 py-1 rounded text-sm">
+                        Вход
                     </a>
-                    <a href="/auth/signup" class="bg-green-600 hover:bg-green-700 text-white px-3 py-1 rounded text-sm">
-                        Register
+                    <a href="/auth/register" class="bg-green-600 hover:bg-green-700 text-white px-3 py-1 rounded text-sm">
+                        Регистрация
                     </a>
                 </div>
             <% } %>
