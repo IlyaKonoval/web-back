@@ -24,22 +24,17 @@ import {
   ApiParam,
   ApiQuery,
   ApiTags,
-  ApiBearerAuth,
 } from '@nestjs/swagger';
 import { DeviceResponseDto } from './dto/device-response.dto';
 import { PaginationDto } from '../users/dto/pagination.dto';
 import { Response } from 'express';
-import { Roles } from '../auth/decorators/roles.decorator';
-import { Role } from '@prisma/client';
 
 @ApiTags('Устройства')
 @Controller('api/devices')
-@ApiBearerAuth('JWT-auth')
 export class DevicesApiController {
   constructor(private readonly devicesService: DevicesService) {}
 
   @Post()
-  @Roles(Role.ADMIN)
   @ApiOperation({ summary: 'Создать новую запись устройства' })
   @ApiCreatedResponse({
     description: 'Устройство успешно зарегистрировано.',
@@ -53,7 +48,6 @@ export class DevicesApiController {
   }
 
   @Get()
-  @Roles(Role.ADMIN)
   @ApiOperation({ summary: 'Получить все устройства с пагинацией' })
   @ApiOkResponse({
     description: 'Список устройств.',
@@ -100,7 +94,6 @@ export class DevicesApiController {
   }
 
   @Get('user/:userId')
-  @Roles(Role.ADMIN)
   @ApiOperation({
     summary: 'Получить устройства пользователя по ID пользователя',
   })
@@ -116,7 +109,6 @@ export class DevicesApiController {
   }
 
   @Get(':id')
-  @Roles(Role.ADMIN)
   @ApiOperation({ summary: 'Получить устройство по ID' })
   @ApiOkResponse({ description: 'Устройство.', type: DeviceResponseDto })
   @ApiNotFoundResponse({ description: 'Устройство не найдено.' })
@@ -128,7 +120,6 @@ export class DevicesApiController {
   }
 
   @Patch(':id')
-  @Roles(Role.ADMIN)
   @ApiOperation({ summary: 'Обновить устройство по ID' })
   @ApiOkResponse({
     description: 'Устройство успешно обновлено.',
@@ -145,7 +136,6 @@ export class DevicesApiController {
   }
 
   @Delete(':id')
-  @Roles(Role.ADMIN)
   @ApiOperation({ summary: 'Удалить устройство по ID' })
   @ApiOkResponse({ description: 'Устройство успешно удалено.' })
   @ApiNotFoundResponse({ description: 'Устройство не найдено.' })

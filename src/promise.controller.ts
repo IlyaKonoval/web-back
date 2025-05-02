@@ -1,28 +1,69 @@
-import { Controller, Get, Render, Req } from '@nestjs/common';
-import { Request } from 'express';
+import { Controller, Get, Render } from '@nestjs/common';
 import { ApiExcludeController } from '@nestjs/swagger';
-import { Public } from './auth/decorators/public.decorator';
-import { SessionContainer } from 'supertokens-node/recipe/session';
+import { PrismaService } from '../prisma/prisma.service';
+import { Comment, Project } from '@prisma/client';
 
-interface RequestWithSession extends Request {
-  session?: SessionContainer;
-}
+type CommentWithRelations = Comment & {
+  user: {
+    id: number;
+    username: string;
+  };
+  project: {
+    id: number;
+    title: string;
+  };
+};
 
 @ApiExcludeController()
 @Controller('promise')
 export class PromiseController {
-  @Public()
+  constructor(private prisma: PrismaService) {}
+
   @Get('')
   @Render('promise')
-  promise(@Req() req: RequestWithSession) {
-    const isAuthenticated = !!req.session;
+  async promise() {
+    const isAuthenticated = true;
     console.log('isAuthenticated:', isAuthenticated);
+
+    // Инициализируем массив с правильным типом
+    const userProjects: Project[] = [];
+
+    // Инициализируем массив комментариев с правильным типом
+    let comments: CommentWithRelations[] = [];
+
+    try {
+      comments = await this.prisma.comment.findMany({
+        take: 10,
+        include: {
+          user: {
+            select: {
+              id: true,
+              username: true,
+            },
+          },
+          project: {
+            select: {
+              id: true,
+              title: true,
+            },
+          },
+        },
+        orderBy: {
+          createdAt: 'desc',
+        },
+      });
+    } catch (error) {
+      console.error('Error fetching comments:', error);
+      comments = [];
+    }
 
     return {
       title: 'Promise',
       bodyClass: 'promise-body',
       mainClass: 'promise-main',
-      isAuthenticated: isAuthenticated,
+      isAuthenticated,
+      userProjects,
+      comments,
     };
   }
 }

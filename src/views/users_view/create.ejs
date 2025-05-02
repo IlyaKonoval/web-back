@@ -12,15 +12,6 @@
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/toastify-js/src/toastify.min.css">
 </head>
 <body class="bg-gray-100 font-sans">
-<header class="bg-blue-500 text-white py-4">
-    <nav class="container mx-auto">
-        <ul class="flex space-x-4">
-            <li><a href="/" class="hover:text-blue-200">Home</a></li>
-            <li><a href="/portfolio" class="hover:text-blue-200">Portfolio</a></li>
-            <li><a href="/promise" class="hover:text-blue-200">Promise</a></li>
-        </ul>
-    </nav>
-</header>
 <main class="container mx-auto py-8">
     <h1 class="text-2xl font-bold mb-4">Создать нового пользователя</h1>
     <form action="/user-views/create" method="POST" class="bg-white shadow-md rounded px-8 pt-6 pb-8 mb-4">
@@ -45,16 +36,6 @@
     </form>
     <a href="/user-views" class="text-blue-500 hover:text-blue-700">Назад</a>
 </main>
-<footer class="bg-gray-200 py-4 text-center text-gray-600">
-    <div class="container mx-auto">
-        <div class="mb-2">
-            <a href="https://github.com/IlyaKonoval" class="hover:text-gray-800 mr-4">github</a>
-            <a href="https://www.kaggle.com/konovalovml" class="hover:text-gray-800">kaggle</a>
-        </div>
-        <p class="text-sm">&copy; Ilya Konovalov, 2024</p>
-        <p class="text-sm"><span id="loadTime"></span></p>
-    </div>
-</footer>
 <script src="/js/time_loader.js"></script>
 <script src="/js/page_active.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/toastify-js/src/toastify.min.js"></script>

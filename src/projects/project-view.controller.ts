@@ -6,22 +6,15 @@ import {
   Param,
   Render,
   Res,
-  Req,
   ParseIntPipe,
   NotFoundException,
 } from '@nestjs/common';
 import { ProjectsService } from './projects.service';
 import { CreateProjectDto } from './dto/create-project.dto';
 import { UpdateProjectDto } from './dto/update-project.dto';
-import { Response, Request } from 'express';
+import { Response } from 'express';
 import { ApiExcludeController } from '@nestjs/swagger';
-import { Public } from '../auth/decorators/public.decorator';
-import { SessionContainer } from 'supertokens-node/recipe/session';
 import { PrismaService } from '../../prisma/prisma.service';
-
-interface RequestWithSession extends Request {
-  session?: SessionContainer;
-}
 
 // Интерфейсы для входных данных форм
 interface ProjectFormData {
@@ -38,7 +31,6 @@ export class ProjectsViewController {
     private readonly prisma: PrismaService,
   ) {}
 
-  @Public()
   @Get()
   @Render('projects/index')
   async allProjects() {
@@ -77,29 +69,19 @@ export class ProjectsViewController {
   @Post('create')
   async createProject(
     @Body() createData: ProjectFormData,
-    @Req() req: RequestWithSession,
     @Res() res: Response,
   ) {
     try {
-      if (!req.session) {
-        return res.redirect('/auth/signin');
-      }
+      // Поскольку аутентификация удалена, используем фиксированный ID пользователя
+      // В реальной среде здесь может быть временное решение для тестирования
+      const userId = 1; // Используем фиксированный ID пользователя
 
-      const userEmail = req.session.getUserId();
-      const user = await this.prisma.user.findFirst({
-        where: { email: userEmail },
-      });
-
-      if (!user) {
-        return res.redirect('/auth/signin');
-      }
-
-      // Исправлено: используйте undefined вместо null для соответствия типам DTO
+      // Исправлено: используем undefined вместо null для соответствия типам DTO
       const projectData: CreateProjectDto = {
         title: createData.title,
         description: createData.description || undefined,
         githubLink: createData.githubLink || undefined,
-        userId: user.id,
+        userId: userId,
       };
 
       await this.projectsService.create(projectData);
@@ -118,28 +100,18 @@ export class ProjectsViewController {
 
   @Get('my')
   @Render('projects/my-projects')
-  async myProjects(@Req() req: RequestWithSession, @Res() res: Response) {
-    if (!req.session) {
-      return res.redirect('/auth/signin');
-    }
-
+  async myProjects() {
     try {
-      const userEmail = req.session.getUserId();
-      const user = await this.prisma.user.findFirst({
-        where: { email: userEmail },
-      });
+      const userId = 1;
 
-      if (!user) {
-        return res.redirect('/auth/signin');
-      }
-
-      const projects = await this.projectsService.findByUserId(user.id);
+      const projects = await this.projectsService.findByUserId(userId);
 
       return {
         title: 'My Projects',
         bodyClass: 'bg-gray-100',
         mainClass: 'container mx-auto py-8',
         projects,
+        errorMessage: null,
       };
     } catch (error) {
       console.error('Error fetching user projects:', error);
@@ -154,12 +126,8 @@ export class ProjectsViewController {
   }
 
   @Get(':id')
-  @Public()
   @Render('projects/detail')
-  async projectDetail(
-    @Param('id', ParseIntPipe) id: number,
-    @Req() req: RequestWithSession,
-  ) {
+  async projectDetail(@Param('id', ParseIntPipe) id: number) {
     try {
       const project = await this.projectsService.findOne(id);
       const comments = await this.prisma.comment.findMany({
@@ -176,17 +144,7 @@ export class ProjectsViewController {
         orderBy: { createdAt: 'desc' },
       });
 
-      let isOwner = false;
-      if (req.session) {
-        const userEmail = req.session.getUserId();
-        const user = await this.prisma.user.findFirst({
-          where: { email: userEmail },
-        });
-
-        if (user) {
-          isOwner = user.id === project.userId;
-        }
-      }
+      const isOwner = true;
 
       return {
         title: project.title,
@@ -206,23 +164,10 @@ export class ProjectsViewController {
   @Render('projects/edit')
   async editProjectForm(
     @Param('id', ParseIntPipe) id: number,
-    @Req() req: RequestWithSession,
     @Res() res: Response,
   ) {
-    if (!req.session) {
-      return res.redirect('/auth/signin');
-    }
-
     try {
       const project = await this.projectsService.findOne(id);
-      const userEmail = req.session.getUserId();
-      const user = await this.prisma.user.findFirst({
-        where: { email: userEmail },
-      });
-
-      if (!user || (user.id !== project.userId && user.role !== 'ADMIN')) {
-        return res.redirect('/projects');
-      }
 
       return {
         title: 'Edit Project',
@@ -241,24 +186,9 @@ export class ProjectsViewController {
   async updateProject(
     @Param('id', ParseIntPipe) id: number,
     @Body() updateData: ProjectFormData,
-    @Req() req: RequestWithSession,
     @Res() res: Response,
   ) {
-    if (!req.session) {
-      return res.redirect('/auth/signin');
-    }
-
     try {
-      const project = await this.projectsService.findOne(id);
-      const userEmail = req.session.getUserId();
-      const user = await this.prisma.user.findFirst({
-        where: { email: userEmail },
-      });
-
-      if (!user || (user.id !== project.userId && user.role !== 'ADMIN')) {
-        return res.redirect('/projects');
-      }
-
       // Исправлено: убедитесь, что типы соответствуют ожиданиям DTO
       const projectData: UpdateProjectDto = {
         title: updateData.title,
@@ -283,24 +213,9 @@ export class ProjectsViewController {
   @Post('delete/:id')
   async deleteProject(
     @Param('id', ParseIntPipe) id: number,
-    @Req() req: RequestWithSession,
     @Res() res: Response,
   ) {
-    if (!req.session) {
-      return res.redirect('/auth/signin');
-    }
-
     try {
-      const project = await this.projectsService.findOne(id);
-      const userEmail = req.session.getUserId();
-      const user = await this.prisma.user.findFirst({
-        where: { email: userEmail },
-      });
-
-      if (!user || (user.id !== project.userId && user.role !== 'ADMIN')) {
-        return res.redirect('/projects');
-      }
-
       await this.projectsService.remove(id);
       return res.redirect('/projects/my');
     } catch (error) {

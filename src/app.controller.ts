@@ -1,6 +1,5 @@
 import { Controller, Get, Render } from '@nestjs/common';
 import { ApiExcludeController } from '@nestjs/swagger';
-import { Public } from './auth/decorators/public.decorator';
 import { PrismaService } from '../prisma/prisma.service';
 
 @ApiExcludeController()
@@ -8,7 +7,6 @@ import { PrismaService } from '../prisma/prisma.service';
 export class AppController {
   constructor(private prisma: PrismaService) {}
 
-  @Public()
   @Get('/')
   @Render('index')
   root() {
@@ -19,7 +17,6 @@ export class AppController {
     };
   }
 
-  @Public()
   @Get('/index')
   @Render('index')
   index() {
@@ -30,7 +27,6 @@ export class AppController {
     };
   }
 
-  @Public()
   @Get('/portfolio')
   @Render('portfolio')
   async portfolio() {

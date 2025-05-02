@@ -10,55 +10,30 @@ import {
   NotFoundException,
   ConflictException,
   Delete,
-  Req,
-  UseGuards,
 } from '@nestjs/common';
 import { UsersService } from './users.service';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
 import { Response } from 'express';
 import { ApiExcludeController } from '@nestjs/swagger';
-import { Roles } from '../auth/decorators/roles.decorator';
-import { Role } from '@prisma/client';
-import { AuthGuard } from '../auth/guards/auth.guard';
-import { RolesGuard } from '../auth/guards/roles.guard';
-import { SessionContainer } from 'supertokens-node/recipe/session';
-import { AuthService } from '../auth/auth.service';
-
-// Определяем интерфейс для запроса с сессией
-interface RequestWithSession extends Request {
-  session?: SessionContainer;
-}
 
 @ApiExcludeController()
 @Controller('user-views')
-@UseGuards(AuthGuard, RolesGuard)
-@Roles(Role.ADMIN)
 export class UsersViewController {
-  constructor(
-    private readonly usersService: UsersService,
-    private readonly authService: AuthService, // Добавляем AuthService как зависимость
-  ) {}
+  constructor(private readonly usersService: UsersService) {}
 
   @Get()
   @Render('users_view/index_user')
-  async showUsers(@Req() req: RequestWithSession) {
+  async showUsers() {
     try {
       const users = await this.usersService.findAll();
-
-      let currentUser: string | null = null;
-      if (req.session) {
-        if (typeof req.session.getUserId === 'function') {
-          currentUser = req.session.getUserId();
-        }
-      }
 
       return {
         users,
         title: 'Список пользователей',
         bodyClass: 'bg-gray-100',
         mainClass: 'p-4',
-        currentUser,
+        currentUser: null,
       };
     } catch (error) {
       const errorMessage =
@@ -228,26 +203,6 @@ export class UsersViewController {
       );
       res.redirect(
         `/user-views?error=${encodeURIComponent('Не удалось удалить пользователя.')}`,
-      );
-    }
-  }
-
-  @Post('promote/:id')
-  async promoteToAdmin(
-    @Param('id', ParseIntPipe) id: number,
-    @Res() res: Response,
-  ) {
-    try {
-      // Используем внедренный AuthService вместо динамического импорта
-      await this.authService.promoteToAdmin(id);
-      res.redirect('/user-views');
-    } catch (error) {
-      console.error(
-        `Error promoting user ${id} to admin:`,
-        error instanceof Error ? error.message : error,
-      );
-      res.redirect(
-        `/user-views?error=${encodeURIComponent('Не удалось сделать пользователя администратором.')}`,
       );
     }
   }

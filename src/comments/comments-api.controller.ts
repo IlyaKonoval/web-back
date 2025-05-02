@@ -24,16 +24,13 @@ import {
   ApiParam,
   ApiQuery,
   ApiTags,
-  ApiBearerAuth,
 } from '@nestjs/swagger';
 import { CommentResponseDto } from './dto/comment-response.dto';
 import { PaginationDto } from '../users/dto/pagination.dto';
 import { Response } from 'express';
-import { Public } from '../auth/decorators/public.decorator';
 
 @ApiTags('Комментарии')
 @Controller('api/comments')
-@ApiBearerAuth('JWT-auth')
 export class CommentsApiController {
   constructor(private readonly commentsService: CommentsService) {}
 
@@ -51,7 +48,6 @@ export class CommentsApiController {
   }
 
   @Get()
-  @Public()
   @ApiOperation({ summary: 'Получить все комментарии с пагинацией' })
   @ApiOkResponse({
     description: 'Список комментариев.',
@@ -98,7 +94,6 @@ export class CommentsApiController {
   }
 
   @Get('project/:projectId')
-  @Public()
   @ApiOperation({ summary: 'Получить комментарии проекта по ID проекта' })
   @ApiOkResponse({
     description: 'Комментарии проекта.',
@@ -127,7 +122,6 @@ export class CommentsApiController {
   }
 
   @Get(':id')
-  @Public()
   @ApiOperation({ summary: 'Получить комментарий по ID' })
   @ApiOkResponse({ description: 'Комментарий.', type: CommentResponseDto })
   @ApiNotFoundResponse({ description: 'Комментарий не найден.' })

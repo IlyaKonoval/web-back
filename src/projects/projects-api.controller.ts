@@ -24,18 +24,13 @@ import {
   ApiParam,
   ApiQuery,
   ApiTags,
-  ApiBearerAuth,
 } from '@nestjs/swagger';
 import { ProjectResponseDto } from './dto/project-response.dto';
 import { PaginationDto } from '../users/dto/pagination.dto';
 import { Response } from 'express';
-import { Public } from '../auth/decorators/public.decorator';
-import { Roles } from '../auth/decorators/roles.decorator';
-import { Role } from '@prisma/client';
 
 @ApiTags('Проекты')
 @Controller('api/projects')
-@ApiBearerAuth('JWT-auth')
 export class ProjectsApiController {
   constructor(private readonly projectsService: ProjectsService) {}
 
@@ -53,7 +48,6 @@ export class ProjectsApiController {
   }
 
   @Get()
-  @Public()
   @ApiOperation({ summary: 'Получить все проекты с пагинацией' })
   @ApiOkResponse({
     description: 'Список проектов.',
@@ -113,7 +107,6 @@ export class ProjectsApiController {
   }
 
   @Get(':id')
-  @Public()
   @ApiOperation({ summary: 'Получить проект по ID' })
   @ApiOkResponse({ description: 'Проект.', type: ProjectResponseDto })
   @ApiNotFoundResponse({ description: 'Проект не найден.' })
@@ -141,7 +134,6 @@ export class ProjectsApiController {
   }
 
   @Delete(':id')
-  @Roles(Role.ADMIN)
   @ApiOperation({ summary: 'Удалить проект по ID' })
   @ApiOkResponse({ description: 'Проект успешно удален.' })
   @ApiNotFoundResponse({ description: 'Проект не найден.' })

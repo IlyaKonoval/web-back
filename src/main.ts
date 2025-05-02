@@ -8,7 +8,6 @@ import * as methodOverride from 'method-override';
 import * as cookieParser from 'cookie-parser';
 import { HttpExceptionFilter } from './users/filters/http-exception.filter';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
-import supertokens from 'supertokens-node';
 
 async function bootstrap() {
   const app = await NestFactory.create<NestExpressApplication>(AppModule);
@@ -24,7 +23,7 @@ async function bootstrap() {
   app.useGlobalFilters(new HttpExceptionFilter());
   app.enableCors({
     origin: process.env.FRONTEND_URL || 'http://localhost:3000',
-    allowedHeaders: ['content-type', ...supertokens.getAllCORSHeaders()],
+    allowedHeaders: ['content-type'],
     credentials: true,
   });
 
@@ -44,18 +43,8 @@ async function bootstrap() {
     .setTitle('My API')
     .setDescription('API для тестирования ручек')
     .setVersion('1.0')
-    .addBearerAuth(
-      {
-        type: 'http',
-        scheme: 'bearer',
-        bearerFormat: 'JWT',
-        name: 'Authorization',
-        description: 'Enter JWT token',
-        in: 'header',
-      },
-      'JWT-auth',
-    )
-    .build();
+    .build(); // Removed Bearer auth configuration
+
   const document = SwaggerModule.createDocument(app, config);
   SwaggerModule.setup('api', app, document);
 

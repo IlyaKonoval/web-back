@@ -24,17 +24,14 @@ import {
   ApiParam,
   ApiQuery,
   ApiTags,
-  ApiBearerAuth,
   ApiConflictResponse,
 } from '@nestjs/swagger';
 import { ReviewResponseDto } from './dto/review-response.dto';
 import { PaginationDto } from '../users/dto/pagination.dto';
 import { Response } from 'express';
-import { Public } from '../auth/decorators/public.decorator';
 
 @ApiTags('Отзывы')
 @Controller('api/reviews')
-@ApiBearerAuth('JWT-auth')
 export class ReviewsApiController {
   constructor(private readonly reviewsService: ReviewsService) {}
 
@@ -55,7 +52,6 @@ export class ReviewsApiController {
   }
 
   @Get()
-  @Public()
   @ApiOperation({ summary: 'Получить все отзывы с пагинацией' })
   @ApiOkResponse({
     description: 'Список отзывов.',
@@ -102,7 +98,6 @@ export class ReviewsApiController {
   }
 
   @Get('project/:projectId')
-  @Public()
   @ApiOperation({ summary: 'Получить отзывы проекта по ID проекта' })
   @ApiOkResponse({ description: 'Отзывы проекта.', type: [ReviewResponseDto] })
   @ApiParam({ name: 'projectId', type: Number, description: 'ID проекта' })
@@ -113,7 +108,6 @@ export class ReviewsApiController {
   }
 
   @Get('project/:projectId/rating')
-  @Public()
   @ApiOperation({ summary: 'Получить средний рейтинг проекта' })
   @ApiOkResponse({
     description: 'Средний рейтинг проекта.',
@@ -143,7 +137,6 @@ export class ReviewsApiController {
   }
 
   @Get(':id')
-  @Public()
   @ApiOperation({ summary: 'Получить отзыв по ID' })
   @ApiOkResponse({ description: 'Отзыв.', type: ReviewResponseDto })
   @ApiNotFoundResponse({ description: 'Отзыв не найден.' })
