@@ -1,63 +1,71 @@
-import { UseGuards } from '@nestjs/common';
-import { Args, Context, Mutation, Query, Resolver } from '@nestjs/graphql';
+import {
+  Resolver,
+  Query,
+  Mutation,
+  Args,
+  ResolveField,
+  Parent,
+} from '@nestjs/graphql';
+import { UseGuards, NotFoundException } from '@nestjs/common';
+import { User } from './user.model';
+import { CreateUserInput } from './create-user.input';
+import { RegisterDto } from './dto/auth.dto';
 import { AuthService } from './auth.service';
 import { JwtAuthGuard } from './jwt-auth.guard';
-import { LoginDto, RegisterDto } from './dto/auth.dto';
-import { Public } from './decorators/public.decorator';
-import { User } from './interfaces/user.interface';
+import { PrismaService } from '../../prisma/prisma.service';
+import { Project } from '../projects/project.model';
+import { Comment } from '../comments/comment.type';
 
-// Define GraphQL context interface
-interface GqlContext {
-  req: {
-    user: User;
-  };
-}
-
-@Resolver('User')
+@Resolver(() => User)
 export class UserResolver {
-  constructor(private authService: AuthService) {}
+  constructor(
+    private readonly authService: AuthService,
+    private readonly prisma: PrismaService,
+  ) {}
 
-  @Public()
-  @Mutation('login')
-  async login(@Args('loginInput') loginInput: LoginDto) {
-    const user = await this.authService.validateUser(
-      loginInput.email,
-      loginInput.password,
-    );
+  @Query(() => [User])
+  users(): Promise<User[]> {
+    return this.authService.getAllUsers();
+  }
+
+  @Query(() => User)
+  async user(@Args('id') id: number): Promise<User> {
+    const user = await this.authService.getUserById(id);
     if (!user) {
-      throw new Error('Invalid credentials');
+      throw new NotFoundException(`User with ID ${id} not found`);
     }
-
-    // Remove 'await' if login is synchronous
-    const accessToken = this.authService.login(user);
-    const refreshToken = await this.authService.generateRefreshToken(user.id);
-
-    return {
-      accessToken,
-      refreshToken,
-      user,
-    };
+    return user;
   }
 
-  @Public()
-  @Mutation('register')
-  async register(@Args('registerInput') registerInput: RegisterDto) {
-    const user = await this.authService.register(registerInput);
-
-    const accessToken = this.authService.login(user);
-    const refreshToken = await this.authService.generateRefreshToken(user.id);
-
-    return {
-      accessToken,
-      refreshToken,
-      user,
+  @Mutation(() => User)
+  async createUser(@Args('input') input: CreateUserInput): Promise<User> {
+    const registerDto: RegisterDto = {
+      email: input.email,
+      password: input.password,
+      confirmPassword: input.confirmPassword ?? input.password, // безопасная подстановка
+      name: input.name,
     };
+    return this.authService.register(registerDto);
   }
 
+  @Mutation(() => String)
   @UseGuards(JwtAuthGuard)
-  @Query('me')
-  me(@Context() context: GqlContext): User {
-    // Remove async since there's no await
-    return context.req.user;
+  async deleteUser(@Args('id') id: number): Promise<string> {
+    await this.authService.deleteUser(id);
+    return 'User deleted successfully';
+  }
+
+  @ResolveField(() => [Project])
+  async projects(@Parent() user: User): Promise<Project[]> {
+    return this.prisma.project.findMany({
+      where: { userId: user.id },
+    });
+  }
+
+  @ResolveField(() => [Comment])
+  async comments(@Parent() user: User): Promise<Comment[]> {
+    return this.prisma.comment.findMany({
+      where: { userId: user.id },
+    });
   }
 }

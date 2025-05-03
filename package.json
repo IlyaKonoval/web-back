@@ -24,6 +24,7 @@
     "test:e2e": "jest --config ./test/jest-e2e.json"
   },
   "dependencies": {
+    "@nestjs/apollo": "^13.1.0",
     "@nestjs/common": "^11.0.1",
     "@nestjs/config": "^4.0.2",
     "@nestjs/core": "^11.0.1",
@@ -43,6 +44,7 @@
     "express": "^5.1.0",
     "express-ejs-layouts": "^2.5.1",
     "express-openid-connect": "^2.18.0",
+    "graphql": "^16.11.0",
     "method-override": "^3.0.0",
     "passport": "^0.7.0",
     "passport-jwt": "^4.0.1",
