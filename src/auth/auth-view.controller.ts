@@ -13,6 +13,30 @@ import { ApiExcludeController } from '@nestjs/swagger';
 import { AuthService } from './auth.service';
 import { JwtAuthGuard } from './jwt-auth.guard';
 import { Public } from './decorators/public.decorator';
+import { User } from './interfaces/user.interface';
+
+// Extend the Express Request type to include user property
+interface AuthenticatedRequest extends Request {
+  user: User;
+  cookies: {
+    [key: string]: string;
+  };
+}
+
+// Define custom error type for proper type checking
+interface ErrorWithMessage {
+  message: string;
+}
+
+// Type guard to check if an error has a message property
+function isErrorWithMessage(error: unknown): error is ErrorWithMessage {
+  return (
+    typeof error === 'object' &&
+    error !== null &&
+    'message' in error &&
+    typeof (error as Record<string, unknown>).message === 'string'
+  );
+}
 
 @ApiExcludeController()
 @Controller('auth')
@@ -29,6 +53,38 @@ export class AuthViewController {
       formData: {},
       query: req.query,
       currentPath: req.path,
+      bodyClass: 'login-page',
+      mainClass: 'login-main',
+    };
+  }
+
+  @Public()
+  @Get('signin')
+  @Render('auth/login')
+  signinForm(@Req() req: Request) {
+    return {
+      title: 'Войти в аккаунт',
+      errorMessage: null,
+      formData: {},
+      query: req.query,
+      currentPath: req.path,
+      bodyClass: 'login-page',
+      mainClass: 'login-main',
+    };
+  }
+
+  // Добавляем маршрут для /auth/signup
+  @Public()
+  @Get('signup')
+  @Render('auth/register')
+  signupForm() {
+    return {
+      title: 'Регистрация',
+      errorMessage: null,
+      formData: {},
+      currentPath: '/auth/signup',
+      bodyClass: 'register-page',
+      mainClass: 'register-main',
     };
   }
 
@@ -49,13 +105,14 @@ export class AuthViewController {
           errorMessage: 'Неверный email или пароль',
           formData: { email: body.email },
           currentPath: '/auth/login',
+          bodyClass: 'login-page',
+          mainClass: 'login-main',
         });
       }
 
-      const accessToken = await this.authService.login(user);
+      const accessToken = this.authService.login(user);
       const refreshToken = await this.authService.generateRefreshToken(user.id);
 
-      // Установка токенов в cookies
       res.cookie('access_token', accessToken, {
         httpOnly: true,
         maxAge: 15 * 60 * 1000, // 15 минут
@@ -66,13 +123,15 @@ export class AuthViewController {
       });
 
       return res.redirect('/');
-    } catch (error) {
+    } catch (error: unknown) {
       console.error('Login error:', error);
       return res.render('auth/login', {
         title: 'Войти в аккаунт',
         errorMessage: 'Ошибка входа. Попробуйте позже.',
         formData: { email: body.email },
         currentPath: '/auth/login',
+        bodyClass: 'login-page',
+        mainClass: 'login-main',
       });
     }
   }
@@ -82,12 +141,11 @@ export class AuthViewController {
   async guestLogin(@Res() res: Response) {
     try {
       const guestUser = await this.authService.createGuestUser();
-      const accessToken = await this.authService.login(guestUser);
+      const accessToken = this.authService.login(guestUser);
       const refreshToken = await this.authService.generateRefreshToken(
         guestUser.id,
       );
 
-      // Установка токенов в cookies
       res.cookie('access_token', accessToken, {
         httpOnly: true,
         maxAge: 15 * 60 * 1000, // 15 минут
@@ -98,13 +156,15 @@ export class AuthViewController {
       });
 
       return res.redirect('/');
-    } catch (error) {
+    } catch (error: unknown) {
       console.error('Guest login error:', error);
       return res.render('auth/login', {
         title: 'Войти в аккаунт',
         errorMessage: 'Ошибка входа как гость. Попробуйте позже.',
         formData: {},
         currentPath: '/auth/login',
+        bodyClass: 'login-page',
+        mainClass: 'login-main',
       });
     }
   }
@@ -118,6 +178,8 @@ export class AuthViewController {
       errorMessage: null,
       formData: {},
       currentPath: '/auth/register',
+      bodyClass: 'register-page',
+      mainClass: 'register-main',
     };
   }
 
@@ -134,27 +196,27 @@ export class AuthViewController {
     @Res() res: Response,
   ) {
     try {
-      // Проверка, совпадают ли пароли
       if (body.password !== body.confirmPassword) {
         return res.render('auth/register', {
           title: 'Регистрация',
           errorMessage: 'Пароли не совпадают',
           formData: { username: body.username, email: body.email },
           currentPath: '/auth/register',
+          bodyClass: 'register-page',
+          mainClass: 'register-main',
         });
       }
 
-      // Создание пользователя
       const user = await this.authService.register({
         username: body.username,
         email: body.email,
         password: body.password,
+        confirmPassword: body.confirmPassword,
       });
 
-      const accessToken = await this.authService.login(user);
+      const accessToken = this.authService.login(user);
       const refreshToken = await this.authService.generateRefreshToken(user.id);
 
-      // Установка токенов в cookies
       res.cookie('access_token', accessToken, {
         httpOnly: true,
         maxAge: 15 * 60 * 1000, // 15 минут
@@ -165,11 +227,11 @@ export class AuthViewController {
       });
 
       return res.redirect('/');
-    } catch (error) {
+    } catch (error: unknown) {
       console.error('Registration error:', error);
       let errorMessage = 'Ошибка регистрации. Попробуйте позже.';
 
-      if (error.message && error.message.includes('exists')) {
+      if (isErrorWithMessage(error) && error.message.includes('exists')) {
         errorMessage = 'Пользователь с таким email уже существует';
       }
 
@@ -178,6 +240,8 @@ export class AuthViewController {
         errorMessage: errorMessage,
         formData: { username: body.username, email: body.email },
         currentPath: '/auth/register',
+        bodyClass: 'register-page',
+        mainClass: 'register-main',
       });
     }
   }
@@ -185,18 +249,16 @@ export class AuthViewController {
   @Get('logout')
   async logout(@Req() req: Request, @Res() res: Response) {
     try {
-      // Получаем refresh token из cookies
-      const refreshToken = req.cookies['refresh_token'];
+      const refreshToken = req.cookies['refresh_token'] as string | undefined;
       if (refreshToken) {
         await this.authService.logout(refreshToken);
       }
 
-      // Очищаем cookies
       res.clearCookie('access_token');
       res.clearCookie('refresh_token');
 
       return res.redirect('/');
-    } catch (error) {
+    } catch (error: unknown) {
       console.error('Logout error:', error);
       return res.redirect('/');
     }
@@ -205,19 +267,21 @@ export class AuthViewController {
   @UseGuards(JwtAuthGuard)
   @Get('profile')
   @Render('auth/profile')
-  async profile(@Req() req: Request) {
+  profile(@Req() req: AuthenticatedRequest) {
     return {
       title: 'Профиль пользователя',
       user: req.user,
       errorMessage: null,
       currentPath: '/auth/profile',
+      bodyClass: 'profile-page',
+      mainClass: 'profile-main',
     };
   }
 
   @UseGuards(JwtAuthGuard)
   @Get('change-password')
   @Render('auth/change-password')
-  changePasswordForm(@Req() req: Request) {
+  changePasswordForm(@Req() req: AuthenticatedRequest, @Res() res: Response) {
     if (req.user.isGuest) {
       return res.redirect('/auth/profile');
     }
@@ -227,13 +291,15 @@ export class AuthViewController {
       errorMessage: null,
       successMessage: null,
       currentPath: '/auth/change-password',
+      bodyClass: 'change-password-page',
+      mainClass: 'change-password-main',
     };
   }
 
   @UseGuards(JwtAuthGuard)
   @Post('change-password')
   async changePassword(
-    @Req() req: Request,
+    @Req() req: AuthenticatedRequest,
     @Body()
     body: {
       currentPassword: string;
@@ -253,6 +319,8 @@ export class AuthViewController {
           errorMessage: 'Новые пароли не совпадают',
           successMessage: null,
           currentPath: '/auth/change-password',
+          bodyClass: 'change-password-page',
+          mainClass: 'change-password-main',
         });
       }
 
@@ -264,7 +332,7 @@ export class AuthViewController {
       res.clearCookie('access_token');
       res.clearCookie('refresh_token');
 
-      const accessToken = await this.authService.login(req.user);
+      const accessToken = this.authService.login(req.user);
       const refreshToken = await this.authService.generateRefreshToken(
         req.user.id,
       );
@@ -283,12 +351,14 @@ export class AuthViewController {
         errorMessage: null,
         successMessage: 'Пароль успешно изменен',
         currentPath: '/auth/change-password',
+        bodyClass: 'change-password-page',
+        mainClass: 'change-password-main',
       });
-    } catch (error) {
+    } catch (error: unknown) {
       console.error('Change password error:', error);
       let errorMessage = 'Ошибка изменения пароля.';
 
-      if (error.message && error.message.includes('incorrect')) {
+      if (isErrorWithMessage(error) && error.message.includes('incorrect')) {
         errorMessage = 'Текущий пароль указан неверно';
       }
 
@@ -297,13 +367,15 @@ export class AuthViewController {
         errorMessage: errorMessage,
         successMessage: null,
         currentPath: '/auth/change-password',
+        bodyClass: 'change-password-page',
+        mainClass: 'change-password-main',
       });
     }
   }
 
   @UseGuards(JwtAuthGuard)
   @Post('delete-account')
-  async deleteAccount(@Req() req: Request, @Res() res: Response) {
+  async deleteAccount(@Req() req: AuthenticatedRequest, @Res() res: Response) {
     try {
       await this.authService.deleteUser(req.user.id);
 
@@ -311,13 +383,15 @@ export class AuthViewController {
       res.clearCookie('refresh_token');
 
       return res.redirect('/');
-    } catch (error) {
+    } catch (error: unknown) {
       console.error('Delete account error:', error);
       return res.render('auth/profile', {
         title: 'Профиль пользователя',
         user: req.user,
         errorMessage: 'Ошибка удаления аккаунта',
         currentPath: '/auth/profile',
+        bodyClass: 'profile-page',
+        mainClass: 'profile-main',
       });
     }
   }

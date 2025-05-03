@@ -1,10 +1,6 @@
 import { ApiProperty } from '@nestjs/swagger';
-import {
-  IsEmail,
-  IsNotEmpty,
-  IsString,
-  MinLength,
-} from 'class-validator';
+import { IsEmail, IsNotEmpty, IsString, MinLength } from 'class-validator';
+import { Role } from '../interfaces/user.interface';
 
 export class LoginDto {
   @ApiProperty({
@@ -42,6 +38,15 @@ export class RegisterDto {
   @IsNotEmpty()
   @MinLength(6)
   password: string;
+
+  @ApiProperty({
+    example: 'password123',
+    description: 'Confirm password',
+  })
+  @IsString()
+  @IsNotEmpty()
+  @MinLength(6)
+  confirmPassword: string;
 
   @ApiProperty({
     example: 'johndoe',
@@ -86,8 +91,12 @@ export class UserResponseDto {
   @ApiProperty({ description: 'Email address' })
   email: string;
 
-  @ApiProperty({ description: 'User role', enum: ['USER', 'ADMIN'] })
-  role: string;
+  @ApiProperty({
+    description: 'User role',
+    enum: Role,
+    enumName: 'Role',
+  })
+  role: Role;
 
   @ApiProperty({ description: 'Registration date' })
   registrationDate: Date;

@@ -4,6 +4,14 @@ import { AuthService } from './auth.service';
 import { JwtAuthGuard } from './jwt-auth.guard';
 import { LoginDto, RegisterDto } from './dto/auth.dto';
 import { Public } from './decorators/public.decorator';
+import { User } from './interfaces/user.interface';
+
+// Define GraphQL context interface
+interface GqlContext {
+  req: {
+    user: User;
+  };
+}
 
 @Resolver('User')
 export class UserResolver {
@@ -20,7 +28,8 @@ export class UserResolver {
       throw new Error('Invalid credentials');
     }
 
-    const accessToken = await this.authService.login(user);
+    // Remove 'await' if login is synchronous
+    const accessToken = this.authService.login(user);
     const refreshToken = await this.authService.generateRefreshToken(user.id);
 
     return {
@@ -35,7 +44,7 @@ export class UserResolver {
   async register(@Args('registerInput') registerInput: RegisterDto) {
     const user = await this.authService.register(registerInput);
 
-    const accessToken = await this.authService.login(user);
+    const accessToken = this.authService.login(user);
     const refreshToken = await this.authService.generateRefreshToken(user.id);
 
     return {
@@ -47,7 +56,8 @@ export class UserResolver {
 
   @UseGuards(JwtAuthGuard)
   @Query('me')
-  async me(@Context() context) {
+  me(@Context() context: GqlContext): User {
+    // Remove async since there's no await
     return context.req.user;
   }
 }

@@ -2,6 +2,20 @@ import { Injectable, NestMiddleware } from '@nestjs/common';
 import { Request, Response, NextFunction } from 'express';
 import { JwtService } from '@nestjs/jwt';
 import { AuthService } from './auth.service';
+import { User } from './interfaces/user.interface';
+
+interface JwtPayload {
+  sub: number;
+  email: string;
+  [key: string]: any;
+}
+
+interface AuthenticatedRequest extends Request {
+  user?: User;
+  cookies: {
+    [key: string]: string;
+  };
+}
 
 @Injectable()
 export class AuthMiddleware implements NestMiddleware {
@@ -10,23 +24,25 @@ export class AuthMiddleware implements NestMiddleware {
     private authService: AuthService,
   ) {}
 
-  async use(req: Request, res: Response, next: NextFunction) {
+  async use(req: AuthenticatedRequest, res: Response, next: NextFunction) {
     const refreshTokens = async (refreshToken: string) => {
       try {
         const tokens = await this.authService.refreshTokens(refreshToken);
 
         res.cookie('access_token', tokens.access_token, {
           httpOnly: true,
-          maxAge: 15 * 60 * 1000, // 15 минут
+          maxAge: 15 * 60 * 1000, // 15 minutes
         });
 
         res.cookie('refresh_token', tokens.refresh_token, {
           httpOnly: true,
-          maxAge: 7 * 24 * 60 * 60 * 1000, // 7 дней
+          maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
         });
 
         return tokens.access_token;
-      } catch (error) {
+      } catch (err) {
+        console.error('Error refreshing tokens:', err);
+
         res.clearCookie('access_token');
         res.clearCookie('refresh_token');
         return null;
@@ -42,26 +58,31 @@ export class AuthMiddleware implements NestMiddleware {
 
     if (accessToken) {
       try {
-        const payload = this.jwtService.verify(accessToken);
+        // Use JwtPayload type for proper type safety
+        const payload = this.jwtService.verify(accessToken) as JwtPayload;
 
-        // Получаем пользователя и добавляем в request
         const user = await this.authService.getUserById(payload.sub);
         if (user) {
           req.user = user;
           return next();
         }
-      } catch (error) {
+      } catch (err) {
+        console.error('Access token verification failed:', err);
+
         if (refreshToken) {
           const newAccessToken = await refreshTokens(refreshToken);
           if (newAccessToken) {
             try {
-              const payload = this.jwtService.verify(newAccessToken);
+              // Use JwtPayload type here too
+              const payload = this.jwtService.verify(newAccessToken) as JwtPayload;
               const user = await this.authService.getUserById(payload.sub);
               if (user) {
                 req.user = user;
                 return next();
               }
-            } catch {}
+            } catch (tokenErr) {
+              console.error('New access token verification failed:', tokenErr);
+            }
           }
         }
       }
@@ -71,13 +92,15 @@ export class AuthMiddleware implements NestMiddleware {
       const newAccessToken = await refreshTokens(refreshToken);
       if (newAccessToken) {
         try {
-          const payload = this.jwtService.verify(newAccessToken);
+          const payload = this.jwtService.verify(newAccessToken) as JwtPayload;
           const user = await this.authService.getUserById(payload.sub);
           if (user) {
             req.user = user;
             return next();
           }
-        } catch {}
+        } catch (err) {
+          console.error('Refresh token verification failed:', err);
+        }
       }
     }
 

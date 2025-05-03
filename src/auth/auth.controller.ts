@@ -19,6 +19,7 @@ import {
 } from '@nestjs/swagger';
 import { AuthService } from './auth.service';
 import { JwtAuthGuard } from './jwt-auth.guard';
+
 import { Public } from './decorators/public.decorator';
 import {
   LoginDto,
@@ -27,6 +28,12 @@ import {
   AuthResponseDto,
   UserResponseDto,
 } from './dto/auth.dto';
+
+import { User } from './interfaces/user.interface';
+
+interface AuthenticatedRequest extends Request {
+  user: User;
+}
 
 @ApiTags('Auth')
 @Controller('auth')
@@ -51,7 +58,7 @@ export class AuthController {
     );
     if (!user) throw new UnauthorizedException('Invalid credentials');
 
-    const accessToken = await this.authService.login(user);
+    const accessToken = this.authService.login(user);
     const refreshToken = await this.authService.generateRefreshToken(user.id);
 
     return {
@@ -71,7 +78,7 @@ export class AuthController {
   })
   async guestLogin(): Promise<AuthResponseDto> {
     const guestUser = await this.authService.createGuestUser();
-    const accessToken = await this.authService.login(guestUser);
+    const accessToken = this.authService.login(guestUser);
     const refreshToken = await this.authService.generateRefreshToken(
       guestUser.id,
     );
@@ -96,7 +103,7 @@ export class AuthController {
   async register(@Body() registerDto: RegisterDto): Promise<AuthResponseDto> {
     const user = await this.authService.register(registerDto);
 
-    const accessToken = await this.authService.login(user);
+    const accessToken = this.authService.login(user);
     const refreshToken = await this.authService.generateRefreshToken(user.id);
 
     return {
@@ -143,14 +150,14 @@ export class AuthController {
     description: 'User profile',
     type: UserResponseDto,
   })
-  async getProfile(@Request() req): Promise<UserResponseDto> {
+  getProfile(@Request() req: AuthenticatedRequest): UserResponseDto {
     return {
       id: req.user.id,
       username: req.user.username,
       email: req.user.email,
       role: req.user.role,
-      registrationDate: req.user.registrationDate,
-      isGuest: req.user.isGuest,
+      registrationDate: req.user.registrationDate || new Date(),
+      isGuest: req.user.isGuest || false,
     };
   }
 
@@ -163,7 +170,7 @@ export class AuthController {
     status: 200,
     description: 'Account deleted successfully',
   })
-  async deleteAccount(@Request() req) {
+  async deleteAccount(@Request() req: AuthenticatedRequest) {
     await this.authService.deleteUser(req.user.id);
     return { message: 'Account deleted successfully' };
   }

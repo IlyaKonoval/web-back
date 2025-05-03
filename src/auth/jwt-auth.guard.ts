@@ -6,7 +6,15 @@ import {
 import { AuthGuard } from '@nestjs/passport';
 import { Reflector } from '@nestjs/core';
 import { GqlExecutionContext } from '@nestjs/graphql';
+import { Observable } from 'rxjs';
 import { IS_PUBLIC_KEY } from './decorators/public.decorator';
+import { User } from './interfaces/user.interface';
+
+// Define interface for GraphQL context
+interface GqlContext {
+  req: Request;
+  [key: string]: any;
+}
 
 @Injectable()
 export class JwtAuthGuard extends AuthGuard('jwt') {
@@ -14,16 +22,19 @@ export class JwtAuthGuard extends AuthGuard('jwt') {
     super();
   }
 
-  getRequest(context: ExecutionContext) {
+  getRequest(context: ExecutionContext): Request {
     if (context.getType() === 'http') {
       return context.switchToHttp().getRequest();
     } else {
       const ctx = GqlExecutionContext.create(context);
-      return ctx.getContext().req;
+      const gqlContext = ctx.getContext<GqlContext>();
+      return gqlContext.req;
     }
   }
 
-  canActivate(context: ExecutionContext) {
+  canActivate(
+    context: ExecutionContext,
+  ): boolean | Promise<boolean> | Observable<boolean> {
     // Check if route is marked as public
     const isPublic = this.reflector.getAllAndOverride<boolean>(IS_PUBLIC_KEY, [
       context.getHandler(),
@@ -37,10 +48,15 @@ export class JwtAuthGuard extends AuthGuard('jwt') {
     return super.canActivate(context);
   }
 
-  handleRequest(err: any, user: any, info: any) {
+  handleRequest<T = User>(
+    err: Error | null,
+    user: T | false,
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    _info: unknown,
+  ): T {
     if (err || !user) {
       throw err || new UnauthorizedException('Invalid or expired token');
     }
-    return user;
+    return user as T;
   }
 }

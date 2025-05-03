@@ -17,7 +17,7 @@ import { AuthMiddleware } from './auth/auth.middleware';
 
 @Module({
   controllers: [AppController, PromiseController, ProjectsViewController],
-  providers: [PrismaService, ProjectsService],
+  providers: [PrismaService, ProjectsService, AuthMiddleware],
   imports: [
     UsersModule,
     DevicesModule,
@@ -32,6 +32,6 @@ import { AuthMiddleware } from './auth/auth.middleware';
 })
 export class AppModule implements NestModule {
   configure(consumer: MiddlewareConsumer) {
-    consumer.apply(AuthMiddleware).forRoutes('*'); // Применяем middleware ко всем маршрутам
+    consumer.apply(AuthMiddleware).forRoutes('*');
   }
 }

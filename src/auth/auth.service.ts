@@ -4,6 +4,7 @@ import {
   UnauthorizedException,
   ConflictException,
   InternalServerErrorException,
+  NotFoundException,
 } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcrypt';
@@ -52,7 +53,7 @@ export class AuthService {
         registrationDate: true,
         isGuest: true,
       },
-    });
+    }) as unknown as User;
   }
 
   async generateRefreshToken(userId: number): Promise<string> {
@@ -70,8 +71,10 @@ export class AuthService {
       });
 
       return refreshToken;
-    } catch (error) {
-      this.logger.error(`Failed to create refresh token: ${error.message}`);
+    } catch (error: unknown) {
+      const errorMessage =
+        error instanceof Error ? error.message : 'Unknown error';
+      this.logger.error(`Failed to create refresh token: ${errorMessage}`);
       throw new InternalServerErrorException(
         'Failed to generate refresh token',
       );
@@ -98,15 +101,18 @@ export class AuthService {
       const isPasswordValid = await bcrypt.compare(pass, user.password);
       if (!isPasswordValid) return null;
 
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
       const { password, ...result } = user;
-      return result;
-    } catch (error) {
-      this.logger.error(`Error validating user: ${error.message}`);
+      return result as unknown as User;
+    } catch (error: unknown) {
+      const errorMessage =
+        error instanceof Error ? error.message : 'Unknown error';
+      this.logger.error(`Error validating user: ${errorMessage}`);
       return null;
     }
   }
 
-  async login(user: User): Promise<string> {
+  login(user: User): string {
     const payload: JwtPayload = {
       email: user.email,
       sub: user.id,
@@ -119,7 +125,6 @@ export class AuthService {
 
   async register(userData: RegisterDto): Promise<UserResponseDto> {
     try {
-      // Check if user already exists
       const existingUser = await this.prisma.user.findUnique({
         where: { email: userData.email },
       });
@@ -150,12 +155,14 @@ export class AuthService {
         },
       });
 
-      return newUser;
+      return newUser as unknown as UserResponseDto;
     } catch (error) {
       if (error instanceof ConflictException) {
         throw error;
       }
-      this.logger.error(`Error registering user: ${error.message}`);
+      const errorMessage =
+        error instanceof Error ? error.message : 'Unknown error';
+      this.logger.error(`Error registering user: ${errorMessage}`);
       throw new InternalServerErrorException('Failed to register user');
     }
   }
@@ -176,20 +183,18 @@ export class AuthService {
         throw new UnauthorizedException('Refresh token expired');
       }
 
-      // Delete the used refresh token
       await this.prisma.refreshToken.delete({ where: { id: tokenData.id } });
 
-      // Generate new tokens
       const user = {
         id: tokenData.user.id,
         email: tokenData.user.email,
         username: tokenData.user.username,
         role: tokenData.user.role,
         isGuest: tokenData.user.isGuest,
-      };
+      } as User;
 
       const newRefreshToken = await this.generateRefreshToken(tokenData.userId);
-      const accessToken = await this.login(user);
+      const accessToken = this.login(user);
 
       return {
         access_token: accessToken,
@@ -199,7 +204,9 @@ export class AuthService {
       if (error instanceof UnauthorizedException) {
         throw error;
       }
-      this.logger.error(`Error refreshing tokens: ${error.message}`);
+      const errorMessage =
+        error instanceof Error ? error.message : 'Unknown error';
+      this.logger.error(`Error refreshing tokens: ${errorMessage}`);
       throw new InternalServerErrorException('Failed to refresh tokens');
     }
   }
@@ -216,7 +223,9 @@ export class AuthService {
 
       return true;
     } catch (error) {
-      this.logger.error(`Error deleting user: ${error.message}`);
+      const errorMessage =
+        error instanceof Error ? error.message : 'Unknown error';
+      this.logger.error(`Error deleting user: ${errorMessage}`);
       throw new InternalServerErrorException('Failed to delete user');
     }
   }
@@ -229,14 +238,16 @@ export class AuthService {
 
       return result.count > 0;
     } catch (error) {
-      this.logger.error(`Error during logout: ${error.message}`);
+      const errorMessage =
+        error instanceof Error ? error.message : 'Unknown error';
+      this.logger.error(`Error during logout: ${errorMessage}`);
       throw new InternalServerErrorException('Failed to logout');
     }
   }
 
   async getUserById(id: number): Promise<User | null> {
     try {
-      return this.prisma.user.findUnique({
+      const user = await this.prisma.user.findUnique({
         where: { id },
         select: {
           id: true,
@@ -247,9 +258,60 @@ export class AuthService {
           isGuest: true,
         },
       });
+
+      return user as unknown as User;
     } catch (error) {
-      this.logger.error(`Error finding user by ID: ${error.message}`);
+      const errorMessage =
+        error instanceof Error ? error.message : 'Unknown error';
+      this.logger.error(`Error finding user by ID: ${errorMessage}`);
       return null;
+    }
+  }
+  async changePassword(
+    userId: number,
+    passwordData: { currentPassword: string; newPassword: string },
+  ): Promise<boolean> {
+    try {
+      const user = await this.prisma.user.findUnique({
+        where: { id: userId },
+        select: {
+          id: true,
+          password: true,
+        },
+      });
+
+      if (!user) {
+        throw new NotFoundException('User not found');
+      }
+
+      // Verify current password
+      const isPasswordValid = await bcrypt.compare(
+        passwordData.currentPassword,
+        user.password,
+      );
+
+      if (!isPasswordValid) {
+        throw new Error('Current password is incorrect');
+      }
+
+      // Hash new password
+      const hashedPassword = await bcrypt.hash(
+        passwordData.newPassword,
+        this.SALT_ROUNDS,
+      );
+
+      // Update password
+      await this.prisma.user.update({
+        where: { id: userId },
+        data: { password: hashedPassword },
+      });
+
+      return true;
+    } catch (error) {
+      const errorMessage =
+        error instanceof Error ? error.message : 'Unknown error';
+      this.logger.error(`Error changing password: ${errorMessage}`);
+      throw error;
     }
   }
 }

@@ -8,6 +8,20 @@ import * as methodOverride from 'method-override';
 import * as cookieParser from 'cookie-parser';
 import { HttpExceptionFilter } from './users/filters/http-exception.filter';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
+import { Request, Response, NextFunction } from 'express';
+
+interface User {
+  id: number;
+  username: string;
+  email: string;
+  role?: string;
+  isGuest?: boolean;
+  [key: string]: any;
+}
+
+interface RequestWithUser extends Request {
+  user?: User;
+}
 
 async function bootstrap() {
   const app = await NestFactory.create<NestExpressApplication>(AppModule);
@@ -28,9 +42,29 @@ async function bootstrap() {
   });
 
   app.use(cookieParser());
-  app.use((req, res, next) => {
-    res.locals.currentPath = req.path;
-    res.locals.user = req.user;
+
+  app.use((req: RequestWithUser, res: Response, next: NextFunction) => {
+    const typedRes = res as Response & {
+      locals: {
+        currentPath?: string;
+        user?: User;
+        bodyClass?: string;
+        mainClass?: string;
+        [key: string]: unknown;
+      };
+    };
+
+    typedRes.locals.currentPath = req.path;
+
+    if (req.user) {
+      typedRes.locals.user = req.user;
+    }
+
+    typedRes.locals.bodyClass =
+      (typedRes.locals.bodyClass as string) || 'default-body';
+    typedRes.locals.mainClass =
+      (typedRes.locals.mainClass as string) || 'default-main';
+
     next();
   });
 

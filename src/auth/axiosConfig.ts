@@ -2,9 +2,20 @@ import axios, {
   AxiosHeaders,
   AxiosResponse,
   InternalAxiosRequestConfig,
+  AxiosError,
+  AxiosInstance,
 } from 'axios';
 
-const api = axios.create({
+interface RefreshTokenResponse {
+  access_token: string;
+  refresh_token: string;
+}
+
+interface RetryableRequest extends InternalAxiosRequestConfig {
+  _retry?: boolean;
+}
+
+const api: AxiosInstance = axios.create({
   baseURL: process.env.REACT_APP_API_URL || 'http://localhost:3000',
   headers: {
     'Content-Type': 'application/json',
@@ -25,8 +36,8 @@ api.interceptors.request.use((config: InternalAxiosRequestConfig) => {
 
 api.interceptors.response.use(
   (response: AxiosResponse) => response,
-  async (error) => {
-    const originalRequest = error.config;
+  async (error: AxiosError) => {
+    const originalRequest = error.config as RetryableRequest;
 
     if (error.response?.status === 401 && !originalRequest._retry) {
       originalRequest._retry = true;
@@ -35,7 +46,7 @@ api.interceptors.response.use(
         const refreshToken = localStorage.getItem('refresh_token');
         if (!refreshToken) throw new Error('No refresh token');
 
-        const response = await axios.post(
+        const response = await axios.post<RefreshTokenResponse>(
           `${process.env.REACT_APP_API_URL || 'http://localhost:3000'}/auth/refresh-token`,
           {
             refresh_token: refreshToken,
@@ -47,7 +58,9 @@ api.interceptors.response.use(
         localStorage.setItem('access_token', access_token);
         localStorage.setItem('refresh_token', refresh_token);
 
-        originalRequest.headers.Authorization = `Bearer ${access_token}`;
+        if (originalRequest.headers) {
+          originalRequest.headers.Authorization = `Bearer ${access_token}`;
+        }
 
         return api(originalRequest);
       } catch (refreshError) {
@@ -57,7 +70,7 @@ api.interceptors.response.use(
         localStorage.removeItem('refresh_token');
 
         window.location.href = '/auth/login';
-        return Promise.reject(refreshError);
+        return Promise.reject(new Error('Authentication token refresh failed'));
       }
     }
     return Promise.reject(error);
