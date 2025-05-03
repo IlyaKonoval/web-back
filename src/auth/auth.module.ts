@@ -27,7 +27,7 @@ import { AuthViewController } from './auth-view.controller';
     UsersModule,
   ],
   providers: [AuthService, JwtStrategy, UserResolver],
-  controllers: [AuthController, AuthViewController],
+  controllers: [AuthViewController, AuthController],
   exports: [AuthService, JwtStrategy, PassportModule, JwtModule],
 })
 export class AuthModule {}

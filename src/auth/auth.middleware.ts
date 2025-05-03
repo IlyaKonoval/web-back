@@ -59,7 +59,7 @@ export class AuthMiddleware implements NestMiddleware {
     if (accessToken) {
       try {
         // Use JwtPayload type for proper type safety
-        const payload = this.jwtService.verify(accessToken) as JwtPayload;
+        const payload = this.jwtService.verify(accessToken);
 
         const user = await this.authService.getUserById(payload.sub);
         if (user) {
@@ -74,7 +74,7 @@ export class AuthMiddleware implements NestMiddleware {
           if (newAccessToken) {
             try {
               // Use JwtPayload type here too
-              const payload = this.jwtService.verify(newAccessToken) as JwtPayload;
+              const payload = this.jwtService.verify(newAccessToken);
               const user = await this.authService.getUserById(payload.sub);
               if (user) {
                 req.user = user;
@@ -92,7 +92,7 @@ export class AuthMiddleware implements NestMiddleware {
       const newAccessToken = await refreshTokens(refreshToken);
       if (newAccessToken) {
         try {
-          const payload = this.jwtService.verify(newAccessToken) as JwtPayload;
+          const payload = this.jwtService.verify(newAccessToken);
           const user = await this.authService.getUserById(payload.sub);
           if (user) {
             req.user = user;

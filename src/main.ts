@@ -26,6 +26,21 @@ interface RequestWithUser extends Request {
 async function bootstrap() {
   const app = await NestFactory.create<NestExpressApplication>(AppModule);
 
+  // Настройки для обработки статических файлов и шаблонов должны быть перед другими middleware
+  const staticAssetsPath = join(__dirname, '..', 'public');
+  app.useStaticAssets(staticAssetsPath);
+  console.log('Static assets directory:', staticAssetsPath);
+
+  app.setBaseViewsDir(join(__dirname, 'views'));
+  app.use(expressLayouts);
+  app.setViewEngine('ejs');
+
+  // Парсер для cookies
+  app.use(cookieParser());
+
+  // Middleware для method-override
+  app.use(methodOverride('_method'));
+
   app.useGlobalPipes(
     new ValidationPipe({
       whitelist: true,
@@ -35,14 +50,15 @@ async function bootstrap() {
   );
 
   app.useGlobalFilters(new HttpExceptionFilter());
+
+  // Настройка CORS
   app.enableCors({
     origin: process.env.FRONTEND_URL || 'http://localhost:3000',
     allowedHeaders: ['content-type'],
     credentials: true,
   });
 
-  app.use(cookieParser());
-
+  // Middleware для добавления локальных переменных в шаблоны
   app.use((req: RequestWithUser, res: Response, next: NextFunction) => {
     const typedRes = res as Response & {
       locals: {
@@ -68,16 +84,7 @@ async function bootstrap() {
     next();
   });
 
-  const staticAssetsPath = join(__dirname, '..', 'public');
-  app.useStaticAssets(staticAssetsPath);
-  console.log('Static assets directory:', staticAssetsPath);
-
-  app.setBaseViewsDir(join(__dirname, 'views'));
-  app.use(expressLayouts);
-  app.setViewEngine('ejs');
-
-  app.use(methodOverride('_method'));
-
+  // Настройка и подключение Swagger
   const config = new DocumentBuilder()
     .setTitle('My API')
     .setDescription('API для тестирования ручек')

@@ -14,6 +14,8 @@ import { User, JwtPayload } from './interfaces/user.interface';
 import { ConfigService } from '@nestjs/config';
 import { RegisterDto, UserResponseDto } from './dto/auth.dto';
 
+// До
+
 @Injectable()
 export class AuthService {
   private readonly logger = new Logger(AuthService.name);
@@ -160,6 +162,16 @@ export class AuthService {
       if (error instanceof ConflictException) {
         throw error;
       }
+
+      const prismaError = error as { code?: string };
+      if (
+        typeof error === 'object' &&
+        error !== null &&
+        prismaError.code === 'P2002'
+      ) {
+        throw new ConflictException('User with this email already exists');
+      }
+
       const errorMessage =
         error instanceof Error ? error.message : 'Unknown error';
       this.logger.error(`Error registering user: ${errorMessage}`);
