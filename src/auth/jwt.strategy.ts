@@ -3,15 +3,7 @@ import { PassportStrategy } from '@nestjs/passport';
 import { ExtractJwt, Strategy } from 'passport-jwt';
 import { PrismaService } from '../../prisma/prisma.service';
 import { ConfigService } from '@nestjs/config';
-import { User } from './interfaces/user.interface';
-
-interface JwtPayload {
-  sub: number;
-  email: string;
-  isGuest?: boolean;
-  role?: string;
-  [key: string]: any;
-}
+import { User, JwtPayload } from './interfaces/user.interface';
 
 @Injectable()
 export class JwtStrategy extends PassportStrategy(Strategy) {
@@ -32,6 +24,11 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
   }
 
   async validate(payload: JwtPayload): Promise<User> {
+    // Проверяем тип токена - должен быть access
+    if (payload.type && payload.type !== 'access') {
+      throw new UnauthorizedException('Invalid token type');
+    }
+
     const user = await this.prisma.user.findUnique({
       where: { id: payload.sub },
       select: {
@@ -40,7 +37,7 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
         username: true,
         role: true,
         registrationDate: true,
-        isGuest: payload.isGuest || false,
+        isGuest: true,
       },
     });
 
@@ -48,6 +45,16 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
       throw new UnauthorizedException('User not found');
     }
 
-    return user as User;
+    // Обеспечиваем, что isGuest всегда является булевым значением
+    const userWithDefaultValues: User = {
+      id: user.id,
+      email: user.email,
+      username: user.username,
+      role: user.role as User['role'], // More type-safe assertion
+      registrationDate: user.registrationDate,
+      isGuest: user.isGuest ?? false,
+    };
+
+    return userWithDefaultValues;
   }
 }

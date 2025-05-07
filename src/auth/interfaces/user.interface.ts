@@ -9,12 +9,13 @@ export interface User {
   username: string;
   role: Role;
   registrationDate?: Date;
-  isGuest?: boolean;
+  isGuest: boolean;
 }
 
 export interface JwtPayload {
   email: string;
   sub: number;
-  isGuest?: boolean;
-  role?: Role;
+  isGuest: boolean;
+  role: Role;
+  type?: 'access' | 'refresh';
 }

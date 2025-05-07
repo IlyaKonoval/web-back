@@ -1,3 +1,4 @@
+// src/auth/create-user.input.ts
 import { InputType, Field } from '@nestjs/graphql';
 import { IsEmail, IsNotEmpty, IsString, MinLength } from 'class-validator';
 

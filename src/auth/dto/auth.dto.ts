@@ -54,7 +54,7 @@ export class RegisterDto {
   })
   @IsString()
   @IsNotEmpty()
-  username: string;
+  username: string; // Changed from 'name' to 'username' to match other interfaces
 }
 
 export class RefreshTokenDto {
@@ -102,5 +102,5 @@ export class UserResponseDto {
   registrationDate: Date;
 
   @ApiProperty({ description: 'Is guest account', default: false })
-  isGuest: boolean;
+  isGuest: boolean = false;
 }

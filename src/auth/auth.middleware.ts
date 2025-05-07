@@ -4,12 +4,6 @@ import { JwtService } from '@nestjs/jwt';
 import { AuthService } from './auth.service';
 import { User } from './interfaces/user.interface';
 
-interface JwtPayload {
-  sub: number;
-  email: string;
-  [key: string]: any;
-}
-
 interface AuthenticatedRequest extends Request {
   user?: User;
   cookies: {
@@ -58,7 +52,6 @@ export class AuthMiddleware implements NestMiddleware {
 
     if (accessToken) {
       try {
-        // Use JwtPayload type for proper type safety
         const payload = this.jwtService.verify(accessToken);
 
         const user = await this.authService.getUserById(payload.sub);
@@ -73,7 +66,6 @@ export class AuthMiddleware implements NestMiddleware {
           const newAccessToken = await refreshTokens(refreshToken);
           if (newAccessToken) {
             try {
-              // Use JwtPayload type here too
               const payload = this.jwtService.verify(newAccessToken);
               const user = await this.authService.getUserById(payload.sub);
               if (user) {

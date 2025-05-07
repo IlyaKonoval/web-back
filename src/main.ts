@@ -53,7 +53,7 @@ async function bootstrap() {
 
   // Настройка CORS
   app.enableCors({
-    origin: process.env.FRONTEND_URL || 'http://localhost:3000',
+    origin: process.env.FRONTEND_URL || 'http://localhost:3001',
     allowedHeaders: ['content-type'],
     credentials: true,
   });
@@ -96,9 +96,9 @@ async function bootstrap() {
   SwaggerModule.setup('api', app, document);
 
   try {
-    await app.listen(3000);
-    console.log('Приложение запущено на порту 3000');
-    console.log('Swagger UI доступен по адресу http://localhost:3000/api');
+    await app.listen(3001);
+    console.log('Приложение запущено на порту 3001');
+    console.log('Swagger UI доступен по адресу http://localhost:3001/api');
   } catch (error: unknown) {
     if (error instanceof Error) {
       console.error(

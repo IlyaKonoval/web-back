@@ -1,5 +1,5 @@
 import { Field, ID, ObjectType, InputType } from '@nestjs/graphql';
-import { Role } from './interfaces/user.interface';
+import { Role } from './role.enum';
 
 @ObjectType({ description: 'User object type' })
 export class User {
@@ -22,7 +22,7 @@ export class User {
     description: 'Whether the user is a guest user',
     defaultValue: false,
   })
-  isGuest: boolean;
+  isGuest: boolean = false;
 
   @Field(() => [Project], {
     description: 'Projects created by the user',

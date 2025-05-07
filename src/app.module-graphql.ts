@@ -7,6 +7,7 @@ import { ProjectsModule } from './projects/projects.module';
 import { CommentsModule } from './comments/comments.module';
 import { ReviewsModule } from './reviews/reviews.module';
 import { AuthModule } from './auth/auth.module';
+import { Request } from 'express';
 
 import { ConfigModule } from '@nestjs/config';
 import { GraphQLModule } from '@nestjs/graphql';
@@ -17,6 +18,11 @@ import { ProjectsViewController } from './projects/project-view.controller';
 import { PrismaService } from '../prisma/prisma.service';
 import { ProjectsService } from './projects/projects.service';
 import { AuthMiddleware } from './auth/auth.middleware';
+
+// Define a type for the context
+interface GqlContext {
+  req: Request;
+}
 
 @Module({
   controllers: [AppController, PromiseController, ProjectsViewController],
@@ -36,7 +42,8 @@ import { AuthMiddleware } from './auth/auth.middleware';
       autoSchemaFile: join(process.cwd(), 'src/schema.gql'),
       sortSchema: true,
       playground: true,
-      context: ({ req }) => ({ req }),
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+      context: ({ req }): GqlContext => ({ req }),
     }),
   ],
 })

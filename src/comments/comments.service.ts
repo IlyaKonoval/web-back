@@ -47,9 +47,11 @@ export class CommentsService {
     }
   }
 
-  async findAll() {
+  async findAll(skip = 0, take = 10) {
     try {
       return this.prisma.comment.findMany({
+        skip,
+        take,
         include: {
           user: {
             select: {
